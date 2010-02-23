@@ -1,0 +1,14 @@
+#!/bin/bash
+
+for c in txt/*.t2t
+do
+    echo $c
+    txt2tags  $c
+done
+
+for c in txt/*.html
+do
+    echo $c
+    mv $c ./html/
+done
+

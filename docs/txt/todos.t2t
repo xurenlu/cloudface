@@ -1,0 +1,54 @@
+Todos
+    author:renlu.xu<xurenlu@gmail.com> 
+    Last Updated: %%date(%Y-%m-%d)
+
+%!target:html
+%!encoding: UTF-8
+%!options: --toc --toc-level=4
+%!postproc(html): @@ <BR>
+%!postproc(xhtml): @@ <BR>
+%!postproc(html): {{(.*?)}} <\1>
+%!postproc(html): {{ <
+%!postproc(html): }} >
+%!style: resources/css/main.css
+%!postproc(html): @startcode <div class="codediv"><pre>
+%!postproc(html): @endcode </pre></div>
+%!postproc(html): @startred <span class="red">
+%!postproc(html): @endred </span>
+%!postproc(html): @startpre <pre>
+%!postproc(html): @endpre </pre>
+
++ 分词接口 +
+
++ 简单全文检索接口 +
+
+++ 初始化简单全文检索接口++
+++ 简单全文检索的索引接口++
+++ 简单全文检索的搜索接口++
+++ 简单全文检索的count接口++
+
++ 通用全文检索接口 +
+
+++ 复杂全文检索的库初始化接口 ++
+++ 复杂全文检索的索引接口 ++
+++ 复杂全文检索的索引接口 ++
+++ 复杂全文检索的count接口 ++
+
++ 除重接口 +
+
+++ 除重数据库初始化接口 ++
+++ 除重数据库feed接口 ++
+++ 除重数据库查重接口 ++
+++ 除重数据库uuid 计算接口 ++
+
++ 文本处理接口 +
+++  关键词提取接口 ++
+++ 词性查询接口 ++
+
++ 禁词数据库接口 +
+++禁词数据库初始化接口 ++
+++ 禁词数据添加接口 ++
+++ 禁词查询接口 ++
+
++ 排序接口 +
+
