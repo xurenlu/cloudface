@@ -1,15 +1,19 @@
 #!/home/renlu/bin/bin/python
 #coding:utf-8
 __usage__ = "%prog -n <num>"
-__version__ = "$Id: server.py 28 2008-11-03 21:05:15Z matt@ansonia01.com $"
-__author__ = "Matt Kangas <matt@daylife.com>"
+__version__ = "1.0.0"
+__author__ = "162cm <xurenlu@gmail.com>"
+
 import sys,os
+print sys.path
+sys.path.append("/usr/local/lib/python2.6/dist-packages/phprpc-3.0.0-py2.6.egg/phprpc")
 #from phprpc import PHPRPC_Server # 引入 PHPRPC Server
-#from phprpc.phprpc import PHPRPC_WSGIApplication, UrlMapMiddleware, PHPRPC_Server
+from phprpc import PHPRPC_WSGIApplication
+#, UrlMapMiddleware, PHPRPC_Server
 import datetime
 #from pymmseg import mmseg
 #import xappy
-#from flup.server.fcgi import WSGIServer
+from flup.server.fcgi import WSGIServer
 import optparse
 import yaml
 import xapian
@@ -41,10 +45,13 @@ def _get_socket_path(name, server_number):
 def _get_rdb(dbpath):
     """return readonly database object"""
     return xapian.Database(DB_PREFIX+dbpath)
+
 def _get_wdb(dbpath):
     """return a writable database """
     return xapian.WritableDatabase(DB_PREFIX+dbpath,xapian.DB_OPEN)
+
 def _prepare_scws():
+    '''预先准备好分词需要的词库,规则文件'''
     _scws.scws_new()
     _scws.scws_set_charset("UTF8")
     _scws.scws_set_xdb("/etc/scws/dict.utf8.xdb")
@@ -54,6 +61,11 @@ def _free_scws():
     '''释放分词词库等;'''
     _scws.scws_free()
 
+def _load_dbdesc(dbpath):
+    """load yaml info to dict"""
+    desc=yaml.load(open(DB_PREFIX+dbpath+".yml"))
+    return desc
+
 def cnseg(string):
     """分词,返回用空格分开的词语组"""
     d=_scws.get_res(string)
@@ -62,153 +74,6 @@ def cnseg(string):
 def segment(string):
     '''分词,返回大数组,单个数据又是(词,词性,idf)组成的数组'''
     return _scws.get_res(string)
-
-#print cnseg("哈哈，我是一只小小鸟")
-#sys.exit()
-def create_index(dbpath,fulltext_fields_v,store_fields_v,index_fields_v):
-    """Create a new index, and set up its field structure.
-    """
-    if isinstance(fulltext_fields_v,dict):
-        fulltext_fields=fulltext_fields_v.values()
-    elif isinstance(fulltext_fields_v,list):
-        fulltext_fields=fulltext_fields_v
-
-    if isinstance(store_fields_v,dict):
-        store_fields=store_fields_v.values()
-    elif isinstance(store_fields_v,list):
-        store_fields=store_fields_v
-       
-    if isinstance(index_fields_v,dict):
-        index_fields=index_fields_v.values()
-    elif isinstance(store_fields_v,list):
-        index_fields=index_fields_v
-
-    try:
-        iconn = xappy.IndexerConnection(dbpath)
-        for f in fulltext_fields:
-            iconn.add_field_action(f,xappy.FieldActions.INDEX_FREETEXT)
-        for f in store_fields:
-            iconn.add_field_action(f, xappy.FieldActions.STORE_CONTENT)
-        for f in index_fields:
-            iconn.add_field_action(f, xappy.FieldActions.INDEX_EXACT)
-        iconn.close()
-        return True
-    except:
-        return None
-
-def simple_create_index(dbpath):
-    return create_index(dbpath,["text"],["text"],[])
-
-def index_data(dbpath,key,data,need_seg_fields_v):
-    """Index a data."""
-    if isinstance( need_seg_fields_v,dict):
-        need_seg_fields=need_seg_fields_v.values()
-    elif isinstance( need_seg_fields_v,list):
-        need_seg_fields=need_seg_fields_v
-
-    try:
-        iconn=xappy.IndexerConnection(dbpath)
-        doc = xappy.UnprocessedDocument()
-        for field in data:
-            if field in need_seg_fields:
-                doc.fields.append(xappy.Field(field, cnseg(str(data[field]))))
-            else:
-                doc.fields.append(xappy.Field(field, str(data[field])))
-        doc.id=key
-        iconn.add(doc)
-        iconn.close()
-        return {"code":200,"keys":data.keys()}
-    except Exception,e:
-        return {"code":500,"msg":str(e)} 
-
-def batch_index(dbpath,datas_v,need_seg_fields_v):
-    """batch index  datas.
-    when you use batch index,you should specific the key field in data['id'] datas_v
-    """
-    if isinstance( need_seg_fields_v,dict):
-        need_seg_fields=need_seg_fields_v.values()
-    elif isinstance( need_seg_fields_v,list):
-        need_seg_fields=need_seg_fields_v
-
-    if isinstance(datas_v,dict):
-        datas=datas_v.values()
-    elif isinstance(datas_v,list):
-        datas=datas_v
-    try:
-        iconn=xappy.IndexerConnection(dbpath)
-        for data in datas:
-            doc = xappy.UnprocessedDocument()
-            for field in data:
-                if field in need_seg_fields:
-                    doc.fields.append(xappy.Field(field, cnseg(str(data[field]))))
-                else:
-                    doc.fields.append(xappy.Field(field, str(data[field])))
-            doc.id=data["id"]
-            iconn.add(doc)
-        iconn.close()
-        return {"code":200,"keys":data.keys()}
-    except Exception,e:
-        return {"code":500,"msg":str(e)} 
-    
-def simple_index_data(dbpath,key,text):
-    return index_data(dbpath,key,{"text":text},["text"])
-def count(dbpath):
-    sconn = xappy.IndexerConnection(dbpath)
-    temp=sconn.get_doccount()
-    sconn.close()
-    return temp
-
-def search_result_report(dbpath,search):
-    """search from database"""
-    sconn =  xappy.SearchConnection(dbpath)
-    q = sconn.query_parse(search, default_op=sconn.OP_AND)
-    results = sconn.search(q,0,0)
-    temp ={
-            "startrank":results.startrank,
-            "endrank":results.endrank,
-            "more_matches":results.more_matches,
-            "matches_lower_bound":results.matches_lower_bound,
-            "matches_upper_bound":results.matches_upper_bound,
-            "matches_estimated":results.matches_estimated,
-            "estimate_is_exact":results.estimate_is_exact
-            }
-    sconn.close()
-    return temp
-def search(dbpath,search,start,limit):
-    sconn =  xappy.SearchConnection(dbpath)
-    q = sconn.query_parse(search, default_op=sconn.OP_AND)
-    #q = sconn.query_parse(search, default_op=sconn.OP_OR)
-    results = sconn.search(q,start,limit)
-    sconn.close()
-    return [result.id for result in results]
-def get_document(dbpath,id):
-    iconn=xappy.IndexerConnection(dbpath)
-    try:
-        temp=iconn.get_document(id)
-    except:
-        return -1
-    iconn.close()
-    ret={}
-    for key in temp.data:
-       ret[key]=temp.data[key][0] 
-    return {
-            "id":temp.id,
-            "data":ret
-            }
-def simple_get_document(dbpath,id):
-    val=get_document(dbpath,id)
-    return {"id":val["id"],"text":val["data"]["text"]}
-def del_document(dbpath,id):
-    iconn=xappy.IndexerConnection(dbpath)
-    temp=iconn.delete(id)
-    iconn.close()
-    return temp
-#server = PHPRPC_Server("localhost",8090)
-
-
-
-
-
 
 def db_init(dbpath,def_dict):
     """init a xapian database,save the information to a yaml;"""
@@ -224,8 +89,8 @@ def db_initsimple(dbpath):
     '''init a simple search xapian database that store only doc_id and text field;'''
     ymlfile=open(DB_PREFIX+dbpath+".yml","w+")
     try:
-        def_dict=  {"doc_id":{"prefix":"I", "field":"doc_id", "segment":False},
-        "text":{"prefix":"T", "field":"text", "segment":True}}
+        def_dict=  {"doc_id":{"prefix":"I","segment":False},
+        "text":{"prefix":"T","segment":True}}
         yaml.dump(def_dict,ymlfile)
         db = xapian.WritableDatabase(DB_PREFIX+dbpath, xapian.DB_CREATE_OR_OPEN)
         return {"code":200}
@@ -241,7 +106,9 @@ def db_get_doccount(dbpath):
     return {'code':200,'data':db.get_doccount()}
 
 def db_get_document(dbpath):
+    ''' to do'''
     pass
+
 def db_simpleindex(dbpath,id,text):
     '''简单地把text分词,然后做为Text域放进去'''
     i=0
@@ -258,50 +125,154 @@ def db_simpleindex(dbpath,id,text):
 
 
     article_id_term = 'I'+str(id)
-    doc.add_term(article_id_term)
+    #doc.add_term(article_id_term)
     doc.set_data(id)
     db=_get_wdb(dbpath)
     db.replace_document(article_id_term,doc)
     return {"code":200}
 
-def _simplesearch_match(dbpath,keyword,offset,size):
+def db_generic_index(dbpath,dockey,data):
+    '''index a data ,segment needed fields automatically'''
+    desc=_load_dbdesc(dbpath)
+
+    i=0
+    stemmer = xapian.Stem("english") # english stemmer
+    doc = xapian.Document()
+
+    for d in data:
+        if desc[d]["segment"]:
+            print data[d]
+            terms=segment(data[d])
+            print "go"
+            for t in terms:
+                i=i+1
+                if len(t[0])>1:
+                    doc.add_posting(desc[d]["prefix"]+stemmer(t[0]).lower(),i)
+                else:
+                    doc.add_posting(stemmer(t[0]).lower(),i)
+        else:
+            doc.add_term(desc[d]["prefix"]+str(data[d]).lower())
+        #print "key:",k,"\tvalue:",v
+
+    article_id_term = "I"+stemmer(dockey)
+    doc.set_data(dockey)
+    db=_get_wdb(dbpath)
+    db.replace_document(article_id_term,doc)
+    return {"code":200}
+
+def _query_match(dbpath,query,offset,size):
+    '''
+    simple search时 需要分词但不需要前加缀
+    通用search时,需要提前加分词 在这一步加前缀'''
+    '''
+    qp = xapian.QueryParser()
+    dbdesc=_load_dbdesc()
+
+    for field in dbdesc:
+        qp.add_prefix(field,dbdesc[field]['prefix'])
+        #add prefix 
+
+    if segment:
+        terms=segment(keyword)
+        stemmer = xapian.Stem("english") # english stemmer
+        q=[]
+        for t in terms:
+            q.append(stemmer(t[0]))
+        query_string = ' '.join(q)
+    else:
+        query_string = keyword
+
+
+    dbdesc=_load_dbdesc(dbpath)
+    for field in dbdesc:
+        qp.add_prefix(field,dbdesc[field]["prefix"])
+    #qp.set_stemming_strategy(xapian.QueryParser.STEM_SOME)
+    qp.set_database(db)
+    print "query_string:",query_string
+    query = qp.parse_query(query_string)
+    '''
+    db=_get_rdb(dbpath)
+    enquire = xapian.Enquire(db)
+    enquire.set_query(query)
+    matches = enquire.get_mset(offset, size)
+    return matches
+
+
+def _simplesearch_get_query(dbpath,keyword):
+    qp=xapian.QueryParser()
+    dbdesc=_load_dbdesc(dbpath)
+    for field in dbdesc:
+        qp.add_prefix(field,dbdesc[field]['prefix'])
+        #add prefix 
     terms=segment(keyword)
     stemmer = xapian.Stem("english") # english stemmer
     q=[]
     for t in terms:
         q.append(stemmer(t[0]))
-
-    db=_get_rdb(dbpath)
-    enquire = xapian.Enquire(db)
     query_string = ' '.join(q)
-    # Parse the query string to produce a Xapian::Query object.
-    qp = xapian.QueryParser()
-    qp.set_stemmer(stemmer)
-    qp.set_database(db)
-    qp.set_stemming_strategy(xapian.QueryParser.STEM_SOME)
     query = qp.parse_query(query_string)
-    enquire.set_query(query)
-    matches = enquire.get_mset(offset, size)
-    return matches
+    return query
 
 def db_simplesearch(dbpath,keyword,offset=0,size=10):
-    matches=_simplesearch_match(dbpath,keyword,offset,size)
+    '''search simple database'''
+    query=_simplesearch_get_query(dbpath,keyword)
+    matches=_query_match(dbpath,query,offset,size)
 
     # Display the results.
     print "%i results found." % matches.get_matches_estimated()
     print "Results 1-%i:" % matches.size()
     docids=[]
     for m in matches:
-        docids.append({"data":m.document.get_data(),"doc_no":m.docid})
+        docids.append({"data":m.document.get_data(),"doc_id":m.docid})
         #print "%i: %i%% docid=%i [%s]" % (m.rank + 1, m.percent, m.docid, m.document.get_data())
     return {"code":200,"data":docids,"size":matches.size()}
 
+
 def db_simplesearch_count(dbpath,keyword):
-    matches=_simplesearch_match(dbpath,keyword,0,10)
+    '''return the result count of simple search'''
+    query=_simplesearch_get_query(dbpath,keyword)
+    matches=_query_match(dbpath,keyword,0,10)
     return matches.get_matches_estimated()
 
-def db_index(dbpath,dockey,data):
-    '''index a data ,segment needed fields automatically'''
+def _get_genericsearch_query(dbpath,queries):
+    ''' get query object of generic search'''
+    qp = xapian.QueryParser()
+    dbdesc=_load_dbdesc(dbpath)
+    stemmer = xapian.Stem("english") # english stemmer
+    for field in dbdesc:
+        qp.add_prefix(field,dbdesc[field]['prefix'])
+        #add prefix 
+	qs=""
+    for q in queries:
+        if dbdesc[q]["segment"]:
+            terms=segment(queries[q])
+            for t in terms:
+                qs= qs +  q + ":" + t[0] + " "
+        else:
+            qs = q + ":" + queries[q] + " "
+    
+    query = qp.parse_query(qs)
+    return query
+
+def db_generic_search(dbpath,queries,offset=0,size=10):
+    """search a database"""
+    query=_get_genericsearch_query(dbpath,queries)
+    matches = _query_match(dbpath,query,offset,size)
+    # Display the results.
+    print "%i results found." % matches.get_matches_estimated()
+    print "Results 1-%i:" % matches.size()
+    docids=[]
+    for m in matches:
+        docids.append({"data":m.document.get_data(),"doc_id":m.docid})
+        #print "%i: %i%% docid=%i [%s]" % (m.rank + 1, m.percent, m.docid, m.document.get_data())
+    return {"code":200,"data":docids,"size":matches.size()}
+
+
+def db_generic_search_count():
+    """get search count of a database """
+    query=_get_genericsearch_query(dbpath,queries)
+    matches = _query_match(dbpath,query,offset,size)
+    return matches.get_matches_estimated()
     
 
 def main(args_in, app_name="api"):
@@ -315,40 +286,51 @@ def main(args_in, app_name="api"):
         opt.server_num=1
 
 #    db_init("test",[ {"prefix":"A", "field":"author", "segment":False}, {"prefix":"S", "field":"subject", "segment":False}, {"prefix":"I", "field":"id", "segment":False } ])
+    #_prepare_scws()
+    import sys
+    #db_initsimple('simple1')
+    #print _load_dbdesc("simple1")
+    #value={"author":"renlu.xu","date":"2009-02-32","email":"xurenlu@gmail.com","url":"http://www.sohu.com/","title":"中国和美国谈判了","content":"前天国家主席胡家明访问了美国东部地区"}
+    #key="doc_1"
+    #db_init("simple2",{"author":{"prefix":"A","segment":False},"date":{"prefix":"D","segment":False},"email":{"prefix":"E","segment":False},"url":{"prefix":"U","segment":False},"title":{"prefix":"T","segment":True},"content":{"prefix":"C","segment":True}})
+    #print db_index("simple2",key,value)
 
-    _prepare_scws()
-    db_initsimple("simple1")
-    db_simpleindex("simple1","z0",'我们是好朋友 I love china')
-    db_simpleindex("simple1","z1",'到我们来自美国 ,你来自哪里?')
-    db_simpleindex("simple1","z2",'哈我们喜欢中美你来自哪里?')
-    db_simpleindex("simple1","z3",'w你来我们这里吧')
-    db_simpleindex("simple1","z4",'哈哈,我们这里是最好的公园')
-    db_simpleindex("simple1","z5",'屁我们都要去法国')
-    db_simpleindex("simple1","z6",'考虑我们一起走')
-    db_simpleindex("simple1","z7",'我们才是好的')
-    db_simpleindex("simple1","z8",'就是我们怎么了啊?')
-    db_simpleindex("simple1","z9",'我们')
-    db_simpleindex("simple1","z10",'我们最喜欢这个')
-    db_simpleindex("simple1","z11",'一样我们也是好样的')
-    db_simpleindex("simple1","z12",'一起我们哈哈')
-    db_simplesearch_count("simple1","我们")
-    db_simplesearch_count("simple1","他们")
-    print db_simplesearch_count("simple1","I")
-    print db_simplesearch_count("simple1","他们")
-    db_simplesearch("simple1","我们China",2,10)
-    db=_get_rdb("simple1")
-    for c in db.allterms():
-        print "new term",c.term
-    print dir(db)
-    print db_get_doccount("test")
-    print db_simplesearch_count("simple1","我们")
-    print db_simplesearch("simple1","我们",2,5)
-    print db.get_document(2).get_data()
-    _free_scws()
+    #db_initsimple("simple1")
+    #db_simpleindex("simple1","z0",'我们是好朋友 I love china')
+    #db_simpleindex("simple1","z1",'到我们来自美国 ,你来自哪里?')
+    #db_simpleindex("simple1","z2",'哈我们喜欢中美你来自哪里?')
+    #db_simpleindex("simple1","z3",'w你来我们这里吧')
+    #db_simpleindex("simple1","z4",'哈哈,我们这里是最好的公园')
+    #db_simpleindex("simple1","z5",'屁我们都要去法国')
+    #db_simpleindex("simple1","z6",'考虑我们一起走')
+    #db_simpleindex("simple1","z7",'我们才是好的')
+    #db_simpleindex("simple1","z8",'就是我们怎么了啊?')
+    #db_simpleindex("simple1","z9",'我们')
+    #db_simpleindex("simple1","z10",'我们最喜欢这个')
+    #db_simpleindex("simple1","z11",'一样我们也是好样的')
+    #db_simpleindex("simple1","z12",'一起我们哈哈')
+    #db_simplesearch_count("simple1","我们")
+    #db_simplesearch_count("simple1","他们")
+    #print db_simplesearch_count("simple1","I")
+    #print db_simplesearch_count("simple1","他们")
+    #print db_generic_search("simple1",{"text":"我们佛教徒不吃肉"})
+    #sys.exit(0)
+    #db_simplesearch("simple1","'text:我们'",0,10)
+    #sys.exit(0)
+    #db=_get_rdb("simple1")
+    #for c in db.allterms():
+    #    print "new term",c.term
+    #print dir(db)
+    #print db_get_doccount("test")
+    #print db_simplesearch_count("simple1","我们")
+    #print db_simplesearch("simple1","我们",2,5)
+    #print db.get_document(2).get_data()
+    #_free_scws()
 
-    #socketfile = _get_socket_path(app_name, opt.server_num)
-    #app=PHPRPC_WSGIApplication()
-#    app.add(cnseg)
+    socketfile = _get_socket_path(app_name, opt.server_num)
+    app=PHPRPC_WSGIApplication()
+    print dir(app)
+    app.add(cnseg)
 #    app.add(create_index)
 #    app.add(search)
 #    app.add(search_result_report)
@@ -363,18 +345,18 @@ def main(args_in, app_name="api"):
     #app.debug = True
     #app.start()
 
-#    try:
-#        WSGIServer(app,
-#               bindAddress = socketfile,
-#               umask = FCGI_SOCKET_UMASK,
-#               multiplexed = True,
-#               ).run()
-#    except Exception,e:
-#        print 'run app error:"',e
-#    finally:
-#        # Clean up server socket file
-#        if os.path.exists(socketfile):
-#            os.unlink(socketfile)
+    try:
+        WSGIServer(app,
+               bindAddress = socketfile,
+               umask = FCGI_SOCKET_UMASK,
+               multiplexed = True,
+               ).run()
+    except Exception,e:
+        print 'run app error:"',e
+    finally:
+        # Clean up server socket file
+        if os.path.exists(socketfile):
+            os.unlink(socketfile)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
