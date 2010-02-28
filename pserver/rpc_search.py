@@ -75,7 +75,7 @@ def segment(string):
     '''分词,返回大数组,单个数据又是(词,词性,idf)组成的数组'''
     return _scws.get_res(string)
 
-def db_init(dbpath,def_dict):
+def api_init(dbpath,def_dict):
     """init a xapian database,save the information to a yaml;"""
     ymlfile=open(DB_PREFIX+dbpath+".yml","w+")
     try:
@@ -85,7 +85,7 @@ def db_init(dbpath,def_dict):
     except:
         return {'code':500,"msg":"unkown error"}
 
-def db_initsimple(dbpath):
+def api_initsimple(dbpath):
     '''init a simple search xapian database that store only doc_id and text field;'''
     ymlfile=open(DB_PREFIX+dbpath+".yml","w+")
     try:
@@ -97,7 +97,7 @@ def db_initsimple(dbpath):
     except:
         return {'code':500,"msg":"unkown error"}
 
-def db_get_doccount(dbpath):
+def api_get_doccount(dbpath):
     '''get the counts of the documents in the database'''
     try:
         db=_get_rdb(dbpath)
@@ -105,11 +105,11 @@ def db_get_doccount(dbpath):
         return {'code':500,'msg':"failed to open the database"}
     return {'code':200,'data':db.get_doccount()}
 
-def db_get_document(dbpath):
+def api_get_document(dbpath):
     ''' to do'''
-    pass
+    return {'code':200,'data':'to be finished'}
 
-def db_simpleindex(dbpath,id,text):
+def api_simpleindex(dbpath,id,text):
     '''简单地把text分词,然后做为Text域放进去'''
     i=0
     stemmer = xapian.Stem("english") # english stemmer
@@ -131,7 +131,7 @@ def db_simpleindex(dbpath,id,text):
     db.replace_document(article_id_term,doc)
     return {"code":200}
 
-def db_generic_index(dbpath,dockey,data):
+def api_generic_index(dbpath,dockey,data):
     '''index a data ,segment needed fields automatically'''
     desc=_load_dbdesc(dbpath)
 
@@ -141,9 +141,7 @@ def db_generic_index(dbpath,dockey,data):
 
     for d in data:
         if desc[d]["segment"]:
-            print data[d]
             terms=segment(data[d])
-            print "go"
             for t in terms:
                 i=i+1
                 if len(t[0])>1:
@@ -164,33 +162,6 @@ def _query_match(dbpath,query,offset,size):
     '''
     simple search时 需要分词但不需要前加缀
     通用search时,需要提前加分词 在这一步加前缀'''
-    '''
-    qp = xapian.QueryParser()
-    dbdesc=_load_dbdesc()
-
-    for field in dbdesc:
-        qp.add_prefix(field,dbdesc[field]['prefix'])
-        #add prefix 
-
-    if segment:
-        terms=segment(keyword)
-        stemmer = xapian.Stem("english") # english stemmer
-        q=[]
-        for t in terms:
-            q.append(stemmer(t[0]))
-        query_string = ' '.join(q)
-    else:
-        query_string = keyword
-
-
-    dbdesc=_load_dbdesc(dbpath)
-    for field in dbdesc:
-        qp.add_prefix(field,dbdesc[field]["prefix"])
-    #qp.set_stemming_strategy(xapian.QueryParser.STEM_SOME)
-    qp.set_database(db)
-    print "query_string:",query_string
-    query = qp.parse_query(query_string)
-    '''
     db=_get_rdb(dbpath)
     enquire = xapian.Enquire(db)
     enquire.set_query(query)
@@ -213,7 +184,7 @@ def _simplesearch_get_query(dbpath,keyword):
     query = qp.parse_query(query_string)
     return query
 
-def db_simplesearch(dbpath,keyword,offset=0,size=10):
+def api_simplesearch(dbpath,keyword,offset=0,size=10):
     '''search simple database'''
     query=_simplesearch_get_query(dbpath,keyword)
     matches=_query_match(dbpath,query,offset,size)
@@ -228,11 +199,11 @@ def db_simplesearch(dbpath,keyword,offset=0,size=10):
     return {"code":200,"data":docids,"size":matches.size()}
 
 
-def db_simplesearch_count(dbpath,keyword):
+def api_simplesearch_count(dbpath,keyword):
     '''return the result count of simple search'''
     query=_simplesearch_get_query(dbpath,keyword)
     matches=_query_match(dbpath,keyword,0,10)
-    return matches.get_matches_estimated()
+    return {"code":200,"data":matches.get_matches_estimated()}
 
 def _get_genericsearch_query(dbpath,queries):
     ''' get query object of generic search'''
@@ -254,7 +225,7 @@ def _get_genericsearch_query(dbpath,queries):
     query = qp.parse_query(qs)
     return query
 
-def db_generic_search(dbpath,queries,offset=0,size=10):
+def api_generic_search(dbpath,queries,offset=0,size=10):
     """search a database"""
     query=_get_genericsearch_query(dbpath,queries)
     matches = _query_match(dbpath,query,offset,size)
@@ -268,12 +239,33 @@ def db_generic_search(dbpath,queries,offset=0,size=10):
     return {"code":200,"data":docids,"size":matches.size()}
 
 
-def db_generic_search_count():
+def api_generic_search_count():
     """get search count of a database """
     query=_get_genericsearch_query(dbpath,queries)
     matches = _query_match(dbpath,query,offset,size)
-    return matches.get_matches_estimated()
+    return {"code":200,"data":matches.get_matches_estimated()}
     
+def api_remove_document(dbpath,docid):
+    ''' remove document from database'''
+    wdb=_getwdb(dbpath)
+    stem=xapian.Stem("english")
+    wdb.delete_document(docid)
+    return {"code":200}
+
+def _get_methods(module=None):
+    ''' return methods that  begins with 'api' '''
+    import sys
+    import re
+    if module == None:
+        module = sys.modules[__name__]
+    attrs=dir(module)
+    api_re=re.compile("^api_")
+    apis=[]
+    for attr in attrs:
+        if api_re.match(attr) and callable(getattr(module,attr)):
+            apis.append(getattr(module,attr))
+        #if callable(sys.modules[__name__]) 
+    return apis 
 
 def main(args_in, app_name="api"):
     p = optparse.OptionParser(description=__doc__, version=__version__)
@@ -281,13 +273,15 @@ def main(args_in, app_name="api"):
     p.add_option("-v", action="store_true", dest="verbose", help="verbose logging")
     p.add_option("-n", type="int", dest="server_num", help="Server instance number")
     opt, args = p.parse_args(args_in)
-
+    import sys
     if not opt.server_num:
         opt.server_num=1
-
+    
+    #print _get_methods(sys.modules[__name__])
+    #sys.exit(0)
 #    db_init("test",[ {"prefix":"A", "field":"author", "segment":False}, {"prefix":"S", "field":"subject", "segment":False}, {"prefix":"I", "field":"id", "segment":False } ])
     #_prepare_scws()
-    import sys
+    #import sys
     #db_initsimple('simple1')
     #print _load_dbdesc("simple1")
     #value={"author":"renlu.xu","date":"2009-02-32","email":"xurenlu@gmail.com","url":"http://www.sohu.com/","title":"中国和美国谈判了","content":"前天国家主席胡家明访问了美国东部地区"}
@@ -329,34 +323,19 @@ def main(args_in, app_name="api"):
 
     socketfile = _get_socket_path(app_name, opt.server_num)
     app=PHPRPC_WSGIApplication()
-    print dir(app)
-    app.add(cnseg)
-#    app.add(create_index)
-#    app.add(search)
-#    app.add(search_result_report)
-#    app.add(count)
-#    app.add(index_data)
-#    app.add(batch_index)
-#    app.add(get_document)
-#    app.add(del_document)
-#    app.add(simple_get_document)
-#    app.add(simple_create_index)
-#    app.add(simple_index_data)
-    #app.debug = True
-    #app.start()
-
+    for method in _get_methods(sys.modules[__name__]):
+        app.add(method)
     try:
         WSGIServer(app,
                bindAddress = socketfile,
                umask = FCGI_SOCKET_UMASK,
                multiplexed = True,
-               ).run()
+        ).run()
     except Exception,e:
         print 'run app error:"',e
     finally:
         # Clean up server socket file
         if os.path.exists(socketfile):
             os.unlink(socketfile)
-
 if __name__ == '__main__':
     main(sys.argv[1:])
