@@ -5,7 +5,6 @@ __version__ = "1.0.0"
 __author__ = "162cm <xurenlu@gmail.com>"
 
 import sys,os
-print sys.path
 sys.path.append("/usr/local/lib/python2.6/dist-packages/phprpc-3.0.0-py2.6.egg/phprpc")
 #from phprpc import PHPRPC_Server # 引入 PHPRPC Server
 from phprpc import PHPRPC_WSGIApplication
@@ -85,7 +84,7 @@ def api_init(dbpath,def_dict):
     except:
         return {'code':500,"msg":"unkown error"}
 
-def api_initsimple(dbpath):
+def api_init_simple(dbpath):
     '''init a simple search xapian database that store only doc_id and text field;'''
     ymlfile=open(DB_PREFIX+dbpath+".yml","w+")
     try:
@@ -97,7 +96,7 @@ def api_initsimple(dbpath):
     except:
         return {'code':500,"msg":"unkown error"}
 
-def api_get_doccount(dbpath):
+def api_get_documents_count(dbpath):
     '''get the counts of the documents in the database'''
     try:
         db=_get_rdb(dbpath)
@@ -109,7 +108,7 @@ def api_get_document(dbpath):
     ''' to do'''
     return {'code':200,'data':'to be finished'}
 
-def api_simpleindex(dbpath,id,text):
+def api_simple_index(dbpath,id,text):
     '''简单地把text分词,然后做为Text域放进去'''
     i=0
     stemmer = xapian.Stem("english") # english stemmer
@@ -184,7 +183,7 @@ def _simplesearch_get_query(dbpath,keyword):
     query = qp.parse_query(query_string)
     return query
 
-def api_simplesearch(dbpath,keyword,offset=0,size=10):
+def api_simple_search(dbpath,keyword,offset=0,size=10):
     '''search simple database'''
     query=_simplesearch_get_query(dbpath,keyword)
     matches=_query_match(dbpath,query,offset,size)
@@ -199,7 +198,7 @@ def api_simplesearch(dbpath,keyword,offset=0,size=10):
     return {"code":200,"data":docids,"size":matches.size()}
 
 
-def api_simplesearch_count(dbpath,keyword):
+def api_simple_search_count(dbpath,keyword):
     '''return the result count of simple search'''
     query=_simplesearch_get_query(dbpath,keyword)
     matches=_query_match(dbpath,keyword,0,10)
@@ -239,7 +238,7 @@ def api_generic_search(dbpath,queries,offset=0,size=10):
     return {"code":200,"data":docids,"size":matches.size()}
 
 
-def api_generic_search_count():
+def api_generic_search_count(dbpath,queries):
     """get search count of a database """
     query=_get_genericsearch_query(dbpath,queries)
     matches = _query_match(dbpath,query,offset,size)
