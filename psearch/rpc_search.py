@@ -56,7 +56,7 @@ def segment(string):
     '''分词,返回大数组,单个数据又是(词,词性,idf)组成的数组'''
     return _scws.get_res(string)
 
-def api_init(dbpath,def_dict):
+def api_generic_init(dbpath,def_dict):
     """init a xapian database,save the information to a yaml;"""
     ymlfile=open(DB_PREFIX+dbpath+".yml","w+")
     try:
@@ -66,7 +66,7 @@ def api_init(dbpath,def_dict):
     except:
         return {'code':500,"msg":"unkown error"}
 
-def api_init_simple(dbpath):
+def api_simple_init(dbpath):
     '''init a simple search xapian database that store only doc_id and text field;'''
     ymlfile=open(DB_PREFIX+dbpath+".yml","w+")
     try:
@@ -90,7 +90,7 @@ def api_get_document(dbpath):
     ''' to do'''
     return {'code':200,'data':'to be finished'}
 
-def api_simple_index(dbpath,id,text):
+def api_simple_index(dbpath,dockey,text):
     '''简单地把text分词,然后做为Text域放进去'''
     i=0
     stemmer = xapian.Stem("english") # english stemmer
@@ -100,17 +100,18 @@ def api_simple_index(dbpath,id,text):
         i = i +1
         print stemmer(t[0])
         if len(t[0]) > 1 :
-            doc.add_posting( "Z"+stemmer(t[0]).lower(),i)
+            doc.add_posting( "T"+stemmer(t[0]).lower(),i)
         else:
             doc.add_posting( stemmer(t[0]).lower(),i)
 
 
-    article_id_term = 'I'+str(id)
-    #doc.add_term(article_id_term)
-    doc.set_data(id)
+    article_id_term = "UNIQUE_ID"+dockey
+    doc.add_term(article_id_term)
+    doc.set_data(dockey)
     db=_get_wdb(dbpath)
-    db.replace_document(article_id_term,doc)
-    return {"code":200}
+    print "replacing document:",article_id_term
+    doc_new_id=db.replace_document(article_id_term,doc)
+    return {"code":200,"doc_id":doc_new_di}
 
 def api_generic_index(dbpath,dockey,data):
     '''index a data ,segment needed fields automatically'''
@@ -133,11 +134,11 @@ def api_generic_index(dbpath,dockey,data):
             doc.add_term(desc[d]["prefix"]+str(data[d]).lower())
         #print "key:",k,"\tvalue:",v
 
-    article_id_term = "I"+stemmer(dockey)
+    article_id_term = "UNIQUE_ID"+stemmer(dockey)
     doc.set_data(dockey)
     db=_get_wdb(dbpath)
-    db.replace_document(article_id_term,doc)
-    return {"code":200}
+    doc_new_id=db.replace_document(article_id_term,doc)
+    return {"code":200,"data":doc_new_id}
 
 def _query_match(dbpath,query,offset,size):
     '''
@@ -160,7 +161,7 @@ def _simplesearch_get_query(dbpath,keyword):
     stemmer = xapian.Stem("english") # english stemmer
     q=[]
     for t in terms:
-        q.append(stemmer(t[0]))
+        q.append("text:"+stemmer(t[0]))
     query_string = ' '.join(q)
     query = qp.parse_query(query_string)
     return query
@@ -168,6 +169,7 @@ def _simplesearch_get_query(dbpath,keyword):
 def api_simple_search(dbpath,keyword,offset=0,size=10):
     '''search simple database'''
     query=_simplesearch_get_query(dbpath,keyword)
+    print query
     matches=_query_match(dbpath,query,offset,size)
 
     # Display the results.
@@ -177,14 +179,14 @@ def api_simple_search(dbpath,keyword,offset=0,size=10):
     for m in matches:
         docids.append({"data":m.document.get_data(),"doc_id":m.docid})
         #print "%i: %i%% docid=%i [%s]" % (m.rank + 1, m.percent, m.docid, m.document.get_data())
-    return {"code":200,"data":docids,"size":matches.size()}
+    return {"code":200,"data":docids,"size":matches.size(),"query":str(query)}
 
 
 def api_simple_search_count(dbpath,keyword):
     '''return the result count of simple search'''
     query=_simplesearch_get_query(dbpath,keyword)
     matches=_query_match(dbpath,keyword,0,10)
-    return {"code":200,"data":matches.get_matches_estimated()}
+    return {"code":200,"data":matches.get_matches_estimated(),"query":str(query)}
 
 def _get_genericsearch_query(dbpath,queries):
     ''' get query object of generic search'''
@@ -202,7 +204,6 @@ def _get_genericsearch_query(dbpath,queries):
                 qs= qs +  q + ":" + t[0] + " "
         else:
             qs = q + ":" + queries[q] + " "
-    
     query = qp.parse_query(qs)
     return query
 
@@ -217,23 +218,29 @@ def api_generic_search(dbpath,queries,offset=0,size=10):
     for m in matches:
         docids.append({"data":m.document.get_data(),"doc_id":m.docid})
         #print "%i: %i%% docid=%i [%s]" % (m.rank + 1, m.percent, m.docid, m.document.get_data())
-    return {"code":200,"data":docids,"size":matches.size()}
+    return {"code":200,"data":docids,"size":matches.size(),"query":str(query)}
 
 
 def api_generic_search_count(dbpath,queries):
     """get search count of a database """
     query=_get_genericsearch_query(dbpath,queries)
     matches = _query_match(dbpath,query,offset,size)
-    return {"code":200,"data":matches.get_matches_estimated()}
+    return {"code":200,"data":matches.get_matches_estimated(),"query":str(query)}
     
 def api_remove_document(dbpath,docid):
     ''' remove document from database'''
-    wdb=_getwdb(dbpath)
-    stem=xapian.Stem("english")
-    wdb.delete_document(docid)
-    return {"code":200}
+    try:
+        wdb=_get_wdb(dbpath)
+    except:
+        return {'code':400,"msg":"database not  wrtiable or not exists etc."}
 
-def _get_methods(module=None):
+    try:
+        wdb.delete_document(docid)
+        return {"code":200}
+    except:
+        return {"code":500,"msg":"nothing removed"}
+
+def api_get_methods(module=None):
     ''' return methods that  begins with 'api' '''
     import sys
     import re
@@ -260,8 +267,9 @@ def main(args_in, app_name="api"):
     
 
     socketfile = _get_socket_path(app_name, opt.server_num)
+    _prepare_scws()
     app=PHPRPC_WSGIApplication()
-    for method in _get_methods(sys.modules[__name__]):
+    for method in api_get_methods(sys.modules[__name__]):
         app.add(method)
     try:
         WSGIServer(app,

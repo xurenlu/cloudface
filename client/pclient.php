@@ -9,9 +9,6 @@
  **/
 
 /**
- * Define DocBlock
- *//
-/**
  * openapi client
  **/
 class psearchClient 
@@ -119,7 +116,7 @@ class psearchClient
      **/
     public function simple_search($keyword,$offset=0,$size=10){
         $rpc=$this->_get_rpc();
-        return $rpc->api_simple_search_count($this->dbpath,$keyword,$offset,$size);
+        return $rpc->api_simple_search($this->dbpath,$keyword,$offset,$size);
     }
     /**
      * execute simple indexing operation  to the database
