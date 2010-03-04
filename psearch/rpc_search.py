@@ -111,7 +111,7 @@ def api_simple_index(dbpath,dockey,text):
     db=_get_wdb(dbpath)
     print "replacing document:",article_id_term
     doc_new_id=db.replace_document(article_id_term,doc)
-    return {"code":200,"doc_id":doc_new_di}
+    return {"code":200,"doc_id":doc_new_id}
 
 def api_generic_index(dbpath,dockey,data):
     '''index a data ,segment needed fields automatically'''
@@ -164,6 +164,7 @@ def _simplesearch_get_query(dbpath,keyword):
         q.append("text:"+stemmer(t[0]))
     query_string = ' '.join(q)
     query = qp.parse_query(query_string)
+    return xapian.Query(xapian.Query.OP_OR,query,xapian.Query("T"+keyword))
     return query
 
 def api_simple_search(dbpath,keyword,offset=0,size=10):
@@ -197,14 +198,18 @@ def _get_genericsearch_query(dbpath,queries):
         qp.add_prefix(field,dbdesc[field]['prefix'])
         #add prefix 
 	qs=""
+    unsegments=[]
     for q in queries:
         if dbdesc[q]["segment"]:
             terms=segment(queries[q])
             for t in terms:
                 qs= qs +  q + ":" + t[0] + " "
         else:
-            qs = q + ":" + queries[q] + " "
+            unsegments.append(q)
+            #qs = q + ":" + queries[q] + " "
     query = qp.parse_query(qs)
+    for uq in unsegments:
+        query=xapian.Query(xapian.Query.OP_OR,query,xapian.Query(dbdesc[uq]["prefix"]+queries[uq]))
     return query
 
 def api_generic_search(dbpath,queries,offset=0,size=10):
