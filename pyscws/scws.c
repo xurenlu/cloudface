@@ -59,8 +59,6 @@ static PyObject * scws_scws_set_rule(PyObject * self,PyObject * args){
 static PyObject * scws_get_res(PyObject * self,PyObject * args){
     const char *text;
     int sts;
-
-
     if (!PyArg_ParseTuple(args, "s",&text))
         return NULL;
 
@@ -86,10 +84,34 @@ static PyObject * scws_get_res(PyObject * self,PyObject * args){
         }
     }
     scws_free_result(res);
-
-    //sts = system(command);
     return Py_BuildValue("O",v);
 }
+static PyObject * scws_scws_get_tops(PyObject * self,PyObject * args){
+    char *attr;
+    char * text;
+    long limit;
+    int sts;
+    if (!PyArg_ParseTuple(args, "sls",&text,&limit,&attr))
+    {
+        return NULL;
+    }
+    scws_send_text(s, text, strlen(text));
+    PyObject * v;
+    v=PyList_New(0);//strlen(text));
+    scws_top_t top, cur;
+    cur = top = scws_get_tops(s, limit, attr);
+    while(cur != NULL){
+            PyList_Append(v,Py_BuildValue("(O,O,l,d)",
+                PyString_FromString(cur->word),
+                PyString_FromStringAndSize(cur->attr,1),
+                (long) cur->times,
+                (double) cur->weight));
+            cur = cur->next;
+    }
+    scws_free_tops(top);
+    return Py_BuildValue("O",v);
+}
+
 static PyObject * 
 scws_scws_free(PyObject * self,PyObject * args){
     scws_free(s);
@@ -102,6 +124,7 @@ static PyMethodDef ScwsMethods[] = {
     {"scws_new",  scws_scws_new, METH_VARARGS, ""},
     {"scws_free",  scws_scws_free, METH_VARARGS, ""},
     {"get_res",  scws_get_res, METH_VARARGS, ""},
+    {"get_tops",  scws_scws_get_tops, METH_VARARGS, ""},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
     PyMODINIT_FUNC

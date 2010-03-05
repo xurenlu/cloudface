@@ -18,7 +18,7 @@ Todos
 %!postproc(html): @startpre <pre>
 %!postproc(html): @endpre </pre>
 
-+ 分词接口 +
++分词接口+
 
 + 简单全文检索接口 +
 
