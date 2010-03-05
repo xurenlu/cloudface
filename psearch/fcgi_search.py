@@ -35,13 +35,32 @@ def get_public_methods(module=None):
         #if callable(sys.modules[__name__]) 
     return apis 
 
+class AuthMiddleWare(object):
+    '''this middleware to support simple user authentication
+    I save the (secret_code,username) maps in a variable,
+    and I will save it in database later ,and that's much more better 
+    '''
+    def __init__(self,app):
+        self.app=app
+    def __call__(self,env,start_response=None):
+        users={"secret_key_code1":"xurenlu","secret_key_code2":"user2"}
+        code=env["QUERY_STRING"]
+        if not users.has_key(code):
+            return ('403 Error',[('Content-Type','text/plain')],['403 Invalid code'])
+
+        return self.app(env,start_response)
+
+
 def main(args_in, app_name="api"):
     import sys
-    socketfile=os.path.join(FCGI_SOCKET_DIR, 'floudface-fcgi-%s.socket' % name )
-    _prepare_scws()
+    socketfile=os.path.join(FCGI_SOCKET_DIR, 'floudface-fcgi-%s.socket' % app_name )
     app=PHPRPC_WSGIApplication()
-    for method in api_get_methods(sys.modules[__name__]):
+    import api_search
+    api_search._prepare_scws()
+    for method in get_public_methods(api_search):
         app.add(method)
+    app  = AuthMiddleWare(app)
+
     try:
         WSGIServer(app,
                bindAddress = socketfile,
