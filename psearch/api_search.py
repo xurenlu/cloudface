@@ -15,13 +15,8 @@ import xapian
 import _scws
 
 #FCGI_LISTEN_ADDRESS = ('localhost', 9000)
-FCGI_SOCKET_DIR = '/tmp'
-FCGI_SOCKET_UMASK = 0111
 DB_PREFIX="./"
 
-def _get_socket_path(name, server_number):
-    """return socket file path for fastcgi"""
-    return os.path.join(FCGI_SOCKET_DIR, 'fcgi-%s-%s.socket' % (name, server_number))
 
 def _get_rdb(dbpath):
     """return readonly database object"""
@@ -55,6 +50,13 @@ def cnseg(string):
 def segment(string):
     '''分词,返回大数组,单个数据又是(词,词性,idf)组成的数组'''
     return _scws.get_res(string)
+
+def api_segment(string):
+    return _scws.get_res(string)
+
+def api_getkeywords(string,limit,attr='~v'):
+    """return keywords of  text"""
+    return _scws.get_tops(string,limit,attr)
 
 def api_generic_init(dbpath,def_dict):
     """init a xapian database,save the information to a yaml;"""
@@ -260,33 +262,3 @@ def api_get_methods(module=None):
         #if callable(sys.modules[__name__]) 
     return apis 
 
-def main(args_in, app_name="api"):
-    p = optparse.OptionParser(description=__doc__, version=__version__)
-    p.set_usage(__usage__)
-    p.add_option("-v", action="store_true", dest="verbose", help="verbose logging")
-    p.add_option("-n", type="int", dest="server_num", help="Server instance number")
-    opt, args = p.parse_args(args_in)
-    import sys
-    if not opt.server_num:
-        opt.server_num=1
-    
-
-    socketfile = _get_socket_path(app_name, opt.server_num)
-    _prepare_scws()
-    app=PHPRPC_WSGIApplication()
-    for method in api_get_methods(sys.modules[__name__]):
-        app.add(method)
-    try:
-        WSGIServer(app,
-               bindAddress = socketfile,
-               umask = FCGI_SOCKET_UMASK,
-               multiplexed = True,
-        ).run()
-    except Exception,e:
-        print 'run app error:"',e
-    finally:
-        # Clean up server socket file
-        if os.path.exists(socketfile):
-            os.unlink(socketfile)
-if __name__ == '__main__':
-    main(sys.argv[1:])
