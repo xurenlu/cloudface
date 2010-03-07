@@ -63,19 +63,28 @@ class Table(object):
     def update_by_id(self,id,row,limit=1):
         sql=tinysql.update(self.table,row,{self.primary_key:id},limit)
 
-   
+    def create(self,row):
+        sql=tinysql.create("logs",row)
+        return self.dbh.query(sql)
+
 class Dblog(object):
     """log errors in the database"""
     def __init__(self, dbh):
         self.dbh=dbh
 
-def authenticate(self,dbh,code):
-        table=Table(table="secrets",primary_key="code",dbh=dbh)
-        row=table.find_by_id(code)
-        try:
-            return row[0]
-        except Exception, e:
-            return None
+def authenticate(dbh,code):
+    table=Table(table="secrets",primary_key="code",dbh=dbh)
+    row=table.find_by_id(code)
+    try:
+        return row[0]
+    except Exception, e:
+        return None
+
+def log(dbh,code,user_id,dbpath,func_name,return_code,return_msg):
+    row={"code":code,"user_id":user_id,"dbpath":dbpath,"func_name":func_name,"return_code":return_code,"return_msg":return_msg}
+    table=Table(table="logs",primary_key="id",dbh=dbh)
+    return table.create(row)
+
              
 def main():
     """docstring main"""
@@ -90,9 +99,7 @@ def main():
     data={"host":"localhost","username":"root","password":"","dbname":"cloudface"}
     yaml.dump(data,f)
     f.close()
-    dict=yaml.load(open("./etc/db.yaml"))
-    print dict
 
 
-if __name__ == '__main__':
-    main() 
+#if __name__ == '__main__':
+#    main() 

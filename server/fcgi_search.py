@@ -15,7 +15,7 @@ import optparse
 import yaml
 import xapian
 import _scws
-
+import storage
 #FCGI_LISTEN_ADDRESS = ('localhost', 9000)
 FCGI_SOCKET_DIR = '/tmp'
 FCGI_SOCKET_UMASK = 0111
@@ -49,7 +49,7 @@ class AuthMiddleWare(object):
         code=env["QUERY_STRING"]
         if not users.has_key(code):
             return ('403 Error',[('Content-Type','text/plain')],['403 Invalid code'])
-        env["cloudface.session"]={"count":1000,"username":users[code],"code":code} #phpformat.serialize({"count":1000}) 
+        env["cloudface.session"]={"code":code} #phpformat.serialize({"count":1000}) 
         #print env
         #print env["cloudface.session"]
         #print env
@@ -76,30 +76,54 @@ def function_wrapper(func,func_name):
     """gen new func ,and put a arg as the last argument"""
     def inner(session,*args):
         realargs=[ i for i in args] 
-        print "function ",func_name," called"
-        print "received args,",args
-        print "session",session
-        if not session.has_key("username"):
-            return {"code":403,"msg":"user not exists"}
-        print "realfunc 's first argument",func.func_code.co_varnames[0]
+        code = session['code']
+
+        #开始鉴权
+        dbh=storage.Dbh(prepare_sql="set names utf8")
+        dbh.load_yaml("./etc/db.yaml")
+        dbh.connect()
+        auth=storage.authenticate(dbh,code)
+        if auth == None:
+            #查不到该code的信息,返回403
+            return {'code':403,'msg':"secret code invalid"}
+        if auth["status"] != "normal":
+            return {'code':401,'msg':"your code status is "+ auth['status']}
+
+        if func.func_code.co_varnames[0] == "dbpath" :
+            if  not args[0] == auth["dbpath"]:
+                return {'code':402,'msg':"this code is not for this database"}
+        else:
+            auth["dbpath"]="-"
+        #print "function ",func_name," called"
+        #print "received args,",args
+        #print "session",session
+        #print "realfunc 's first argument",func.func_code.co_varnames[0]
         
         
         current_len=len(args)
-        print "args len:",current_len
-        print 'realfunction arg.len',func.func_code.co_argcount
+        #print "args len:",current_len
+        #print 'realfunction arg.len',func.func_code.co_argcount
+        #把session传过去
         if func.func_code.co_argcount == len(args)+1 :
             if len(args) > 0:
                 realargs.insert(len(args),session)
             else:
                 realargs.insert(0,session)
 
-        print "realargs:",realargs
+        #print "realargs:",realargs
         ret=func(*realargs)
-        if ret['code']==200:
-            print func_name," executed succeed"
-        else:
-            print func_name," executed failed"
-
+        #try:
+        if not ret.has_key("code"):
+            ret['code']=200
+        if not ret.has_key("msg"):
+            ret["msg"]="-"
+        try:
+            storage.log(dbh,auth["code"],auth['user_id'],auth["dbpath"], func_name, ret['code'],ret['msg'])
+        except Exception,e:
+            pass
+        #ret["code"],ret["msg"]
+        #except Exception,e:
+        #    print  "error",dir(e),e.message
         return ret
     return inner
 
