@@ -4,7 +4,7 @@ __usage__ = "%prog -n <num>"
 __version__ = "1.0.0"
 __author__ = "162cm <xurenlu@gmail.com>"
 
-import sys,os
+import sys,os,re
 sys.path.append("/usr/local/lib/python2.6/dist-packages/phprpc-3.0.0-py2.6.egg/phprpc")
 from phprpc import PHPRPC_WSGIApplication
 import datetime
@@ -60,7 +60,7 @@ def api_session_noarg(session):
         session["count"] = session["count"] + 1
     else:
         session["count"] = 1
-    return {"code":200,"count":session["count"],"username":session["username"]}
+    return {"code":200,"count":session["count"]}
 
 def api_session_3args(arg1,arg2,arg3,session):
     if session.has_key("count"):
@@ -72,9 +72,13 @@ def api_session_3args(arg1,arg2,arg3,session):
 def api_nosession(testing):
     return {"code":200,"testing":testing}
 
+global dbpath_reg
+dbpath_reg = re.compile("^[0-9a-zA-Z]+$")
+
 def function_wrapper(func,func_name):
     """gen new func ,and put a arg as the last argument"""
     def inner(session,*args):
+        global dbpath_reg
         realargs=[ i for i in args] 
         code = session['code']
 
@@ -88,10 +92,11 @@ def function_wrapper(func,func_name):
             return {'code':403,'msg':"secret code invalid"}
         if auth["status"] != "normal":
             return {'code':401,'msg':"your code status is "+ auth['status']}
-
         if func.func_code.co_varnames[0] == "dbpath" :
             if  not args[0] == auth["dbpath"]:
                 return {'code':402,'msg':"this code is not for this database"}
+            if dbpath_reg.match(args[0]) == None:
+                return {'code':406,'msg':"dbpath must match regexp: /0-9a-zA-Z+/"}
         else:
             auth["dbpath"]="-"
         #print "function ",func_name," called"
@@ -111,7 +116,11 @@ def function_wrapper(func,func_name):
                 realargs.insert(0,session)
 
         #print "realargs:",realargs
-        ret=func(*realargs)
+        try:
+            ret=func(*realargs)
+        except Exception,e:
+            print "function ",func_name," failed"
+            pass
         #try:
         if not ret.has_key("code"):
             ret['code']=200

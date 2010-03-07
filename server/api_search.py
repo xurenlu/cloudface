@@ -52,14 +52,61 @@ def segment(string):
     return _scws.get_res(string)
 
 def api_segment(string):
+    '''分词,返回大数组,单个数据又是(词,词性,idf)组成的数组
+
+    **example**:
+    @startcode
+    for c in api_segment("我们是好朋友"):
+        print c[0],":",c[1],":",c[2]
+    @endcode
+    **result**:
+    @startcode
+    我们 : r : 4.42000007629
+    是 : v : 0.0
+    好朋友 : nz : 7.96999979019
+    @endcode
+    '''
     return _scws.get_res(string)
 
-def api_getkeywords(string,limit,attr='~v'):
-    """return keywords of  text"""
+def api_getkeywords(string,limit=5,attr='~v'):
+    """return keywords of  text
+    得到某段文本的关键词
+
+    - **string** : 要取关键词的文本
+    - **limit** :整型,要取的关键词的个数,默认为5
+    - **attr** :取哪种词性的关键词,一般可设置为n,代表名词,或~v 
+
+    **example**
+    @startcode
+    for c in module.api_getkeywords(txt,5,"~v"):
+            print c[0],":",c[1],":",c[2],":",c[3]
+    @endcode
+    **result**
+    @startcode
+    Python : e : 18 : 80.629196167
+    语言 : n : 11 : 53.3499946594
+    Machine : e : 9 : 43.7829780579
+    Virtual : e : 9 : 43.7829780579
+    Guido : e : 7 : 28.1651611328
+    @endcode
+    """
     return _scws.get_tops(string,limit,attr)
 
 def api_generic_init(dbpath,def_dict):
-    """init a xapian database,save the information to a yaml;"""
+    """
+    init a xapian database,save the information to a yaml;
+    初始化一个通用的搜索数据库;
+    - **dbpath** : 数据库名字,由字母和数字组成
+    - **def_dict**: 一个hash结构,具体结构如下所示例的:
+
+    @startcode
+    {"author":{"prefix":"A","segment":True},
+    "pubdate":{"prefix":"P","segment":False},
+    "content":{"prefix":"C","segment":True},
+    }
+    @endcode
+
+    """
     ymlfile=open(DB_PREFIX+dbpath+".yml","w+")
     try:
         yaml.dump(def_dict,ymlfile)
