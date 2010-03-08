@@ -4,7 +4,7 @@ __usage__ = "%prog -n <num>"
 __version__ = "1.0.0"
 __author__ = "162cm <xurenlu@gmail.com>"
 
-import sys,os,re
+import sys,os,re,uuid
 sys.path.append("/usr/local/lib/python2.6/dist-packages/phprpc-3.0.0-py2.6.egg/phprpc")
 from phprpc import PHPRPC_WSGIApplication
 import datetime
@@ -116,6 +116,7 @@ def function_wrapper(func,func_name):
                 realargs.insert(0,session)
 
         #print "realargs:",realargs
+
         try:
             ret=func(*realargs)
         except Exception,e:
@@ -126,9 +127,15 @@ def function_wrapper(func,func_name):
             ret['code']=200
         if not ret.has_key("msg"):
             ret["msg"]="-"
+        ret["uuid"]=str(uuid.uuid4())
         try:
-            storage.log(dbh,auth["code"],auth['user_id'],auth["dbpath"], func_name, ret['code'],ret['msg'])
+            if ret["code"]!=200:
+                storage.log(dbh,auth["code"],auth['user_id'],auth["dbpath"], func_name, ret['code'],ret['msg'],ret["uuid"])
+            else:
+                #接口调用正常的情况下,只做一个计数;
+                storage.increment(dbh,auth["user_id"],auth["dbpath"],func_name)
         except Exception,e:
+            print "error occured:",e
             pass
         #ret["code"],ret["msg"]
         #except Exception,e:

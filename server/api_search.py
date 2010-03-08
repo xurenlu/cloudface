@@ -12,6 +12,8 @@ __doc__='''
     - **通用数据库相关API**
     - **文本处理相关API**
 
+    所有的函数调用都返回一个Dict,一般是{"code":200}类似的,如果有数据一般用dict["data"]来返回.dict["code"]是200时,表求请求正常完成.在请求不成功时(dict["code"]!=200时),在下面的文档指出的返回值之外,所有函数都附加返回一个uuid,代表当前请求的uuid,这个出错的请求也会记录在服务器端的日志系统中,可以将这个uuid替交给在线支持系统以获得技术支持.
+
 
 ++简单数据库++
     数据库里的一条记录称为一个文档.简单数据库里的一条纪录非常简单,就是一段文本.每一个文档都有一个标识符,在后面的函数里一般是**dockey**;
@@ -187,7 +189,7 @@ def api_simple_index(dbpath,dockey,text):
     doc = xapian.Document()
     for t in terms:
         i = i +1
-        print stemmer(t[0])
+        #print stemmer(t[0])
         if len(t[0]) > 1 :
             doc.add_posting( "T"+stemmer(t[0]).lower(),i)
         else:
@@ -198,7 +200,7 @@ def api_simple_index(dbpath,dockey,text):
     doc.add_term(article_id_term)
     doc.set_data(dockey)
     db=_get_wdb(dbpath)
-    print "replacing document:",article_id_term
+    #print "replacing document:",article_id_term
     doc_new_id=db.replace_document(article_id_term,doc)
     return {"code":200,"doc_id":doc_new_id}
 
@@ -335,6 +337,7 @@ def api_generic_search(dbpath,queries,offset=0,size=10):
         "author":"renlu",
         "email":"hello@world.com",
         "id":18
+    }
     @endcode
     - **offset**:
     - **size**:要返回的查询结果数
