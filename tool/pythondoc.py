@@ -31,6 +31,7 @@ def main():
             code=getattr(module,attr).func_code
             vars=code.co_varnames[:code.co_argcount]
             methods.append((attr,vars,getattr(module,attr).__doc__))
+    print module.__doc__ +" \n"
     print "+ "+module.__name__ + " +"
     for method in methods:
         _s=",".join(method[1])

@@ -3,6 +3,27 @@
 __usage__ = "%prog -n <num>"
 __version__ = "1.0.0"
 __author__ = "162cm <xurenlu@gmail.com>"
+__doc__='''
++ 概要 +
+
+- **使用方法**:
+    整个搜索API分为三分部,分别是:
+    - **简单数据库相关API**
+    - **通用数据库相关API**
+    - **文本处理相关API**
+
+
+++简单数据库++
+    数据库里的一条记录称为一个文档.简单数据库里的一条纪录非常简单,就是一段文本.每一个文档都有一个标识符,在后面的函数里一般是**dockey**;
+    简单数据包含 **api_simple_index**(dbpath,dockey,text),**api_simple_init**(dbpath),**api_simple_search**(dbpath,keyword,offset,size),**api_simple_search_count**(dbpath,keyword)四个函数; 
+
+++ 通用数据库++
+    通用数据库里的一条纪录(文档)是一个Hash,Python中就是一个Dict,php中就是一个数组.通用数据库相关有**api_generic_index**(dbpath,dockey,data),**api_generic_init**(dbpath,def_dict),**api_generic_search**(dbpath,queries,offset,size),**api_generic_search_count**(dbpath,queries)这四个函数
+
+++ 文本处理相关API++
+    包括分词和取关键词接口,分别是**api_getkeywords**(string,limit,attr)和**api_segment**(string);
+
+'''
 
 import sys,os
 sys.path.append("/usr/local/lib/python2.6/dist-packages/phprpc-3.0.0-py2.6.egg/phprpc")
@@ -50,6 +71,7 @@ def cnseg(string):
 def segment(string):
     '''分词,返回大数组,单个数据又是(词,词性,idf)组成的数组'''
     return _scws.get_res(string)
+
 
 def api_segment(string):
     '''分词,返回大数组,单个数据又是(词,词性,idf)组成的数组
@@ -116,7 +138,11 @@ def api_generic_init(dbpath,def_dict):
         return {'code':500,"msg":"unkown error"}
 
 def api_simple_init(dbpath):
-    '''init a simple search xapian database that store only doc_id and text field;'''
+    '''
+    init a simple search xapian database that store only doc_id and text field;
+    初始化一个简单搜索的数据库
+    - **dbpath**:数据库名字
+    '''
     ymlfile=open(DB_PREFIX+dbpath+".yml","w+")
     try:
         def_dict=  {"doc_id":{"prefix":"I","segment":False},
@@ -128,7 +154,13 @@ def api_simple_init(dbpath):
         return {'code':500,"msg":"unkown error"}
 
 def api_get_documents_count(dbpath):
-    '''get the counts of the documents in the database'''
+    '''
+    get the counts of the documents in the database
+    返回数据库中文档数
+
+    - **dbpath**:数据库名字
+
+    '''
     try:
         db=_get_rdb(dbpath)
     except:
@@ -136,11 +168,19 @@ def api_get_documents_count(dbpath):
     return {'code':200,'data':db.get_doccount()}
 
 def api_get_document(dbpath):
-    ''' to do'''
+    '''
+    待完成中...
+    '''
     return {'code':200,'data':'to be finished'}
 
 def api_simple_index(dbpath,dockey,text):
-    '''简单地把text分词,然后做为Text域放进去'''
+    '''
+    简单地把text分词,然后做为Text域放进去
+
+    - **dbpath**:数据库名字
+    - **dockey**:文档标识符
+    - **text**:要索引的文本
+    '''
     i=0
     stemmer = xapian.Stem("english") # english stemmer
     terms=segment(text)
@@ -163,7 +203,14 @@ def api_simple_index(dbpath,dockey,text):
     return {"code":200,"doc_id":doc_new_id}
 
 def api_generic_index(dbpath,dockey,data):
-    '''index a data ,segment needed fields automatically'''
+    '''
+    index a data ,segment needed fields automatically
+    索引一个数据结构,一个Hash结构
+    
+    - **dbpath** : 数据库名
+    - **dockey** : 文档的标识键
+    - **data** :要索引的数据
+    '''
     desc=_load_dbdesc(dbpath)
 
     i=0
@@ -192,7 +239,8 @@ def api_generic_index(dbpath,dockey,data):
 def _query_match(dbpath,query,offset,size):
     '''
     simple search时 需要分词但不需要前加缀
-    通用search时,需要提前加分词 在这一步加前缀'''
+    通用search时,需要提前加分词 在这一步加前缀
+    '''
     db=_get_rdb(dbpath)
     enquire = xapian.Enquire(db)
     enquire.set_query(query)
@@ -217,14 +265,22 @@ def _simplesearch_get_query(dbpath,keyword):
     return query
 
 def api_simple_search(dbpath,keyword,offset=0,size=10):
-    '''search simple database'''
+    '''
+    search simple database
+    简单数据库的索引
+
+    - **dbpath**: 数据库路径
+    - **keyword**:要搜的关键词
+    - **offset**: 
+    - **size**:
+    '''
     query=_simplesearch_get_query(dbpath,keyword)
     print query
     matches=_query_match(dbpath,query,offset,size)
 
     # Display the results.
-    print "%i results found." % matches.get_matches_estimated()
-    print "Results 1-%i:" % matches.size()
+    #print "%i results found." % matches.get_matches_estimated()
+    #print "Results 1-%i:" % matches.size()
     docids=[]
     for m in matches:
         docids.append({"data":m.document.get_data(),"doc_id":m.docid})
@@ -233,7 +289,13 @@ def api_simple_search(dbpath,keyword,offset=0,size=10):
 
 
 def api_simple_search_count(dbpath,keyword):
-    '''return the result count of simple search'''
+    '''
+    return the result count of simple search
+    返回简单搜索的结果总数
+
+    - **dbpath**: 数据库名
+    - **keyword**: 关键词
+    '''
     query=_simplesearch_get_query(dbpath,keyword)
     matches=_query_match(dbpath,keyword,0,10)
     return {"code":200,"data":matches.get_matches_estimated(),"query":str(query)}
@@ -262,12 +324,26 @@ def _get_genericsearch_query(dbpath,queries):
     return query
 
 def api_generic_search(dbpath,queries,offset=0,size=10):
-    """search a database"""
+    """
+    search a database
+    搜索数据库,使用通用搜索
+
+    - **dbpath**:数据库名
+    - **queries**:搜索条件,是一个hash,例如:
+    @startcode
+    {
+        "author":"renlu",
+        "email":"hello@world.com",
+        "id":18
+    @endcode
+    - **offset**:
+    - **size**:要返回的查询结果数
+    """
     query=_get_genericsearch_query(dbpath,queries)
     matches = _query_match(dbpath,query,offset,size)
     # Display the results.
-    print "%i results found." % matches.get_matches_estimated()
-    print "Results 1-%i:" % matches.size()
+#    print "%i results found." % matches.get_matches_estimated()
+#    print "Results 1-%i:" % matches.size()
     docids=[]
     for m in matches:
         docids.append({"data":m.document.get_data(),"doc_id":m.docid})
@@ -276,13 +352,25 @@ def api_generic_search(dbpath,queries,offset=0,size=10):
 
 
 def api_generic_search_count(dbpath,queries):
-    """get search count of a database """
+    """
+    get search count of a database 
+    获得通用搜索的结果数
+
+    - **dbpath**:数据库名
+    - **queries**:查询条件,参见 **api_generic_search** 中的**queries**参数
+    """
     query=_get_genericsearch_query(dbpath,queries)
     matches = _query_match(dbpath,query,offset,size)
     return {"code":200,"data":matches.get_matches_estimated(),"query":str(query)}
     
 def api_remove_document(dbpath,docid):
-    ''' remove document from database'''
+    '''
+    remove document from database
+    从数据库中删除一个文档
+
+    - **dbpath**:数据库名
+    - **docid**:文档的id,这个id应该是索引文档时索引函数返回的整数
+    '''
     try:
         wdb=_get_wdb(dbpath)
     except:
@@ -295,7 +383,12 @@ def api_remove_document(dbpath,docid):
         return {"code":500,"msg":"nothing removed"}
 
 def api_get_methods(module=None):
-    ''' return methods that  begins with 'api' '''
+    '''
+    return methods that  begins with 'api'
+    查询模块中以api开头的函数和变量名
+
+    - **module**:要查询的模块,默认是None.默认是None时,函数内部会使用当前模块
+    '''
     import sys
     import re
     if module == None:
