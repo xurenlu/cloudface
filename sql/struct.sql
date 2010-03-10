@@ -16,6 +16,26 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `logs`
+--
+
+DROP TABLE IF EXISTS `logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `logs` (
+  `code` varchar(32) CHARACTER SET ascii NOT NULL,
+  `user_id` bigint(11) unsigned NOT NULL,
+  `dbpath` varchar(32) NOT NULL,
+  `func_name` varchar(32) CHARACTER SET ascii NOT NULL,
+  `return_code` int(8) unsigned NOT NULL,
+  `return_msg` varchar(128) CHARACTER SET ascii NOT NULL,
+  `uuid` varchar(36) DEFAULT '-',
+  `id` bigint(11) unsigned NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=45 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `secrets`
 --
 
@@ -26,7 +46,9 @@ CREATE TABLE `secrets` (
   `code` varchar(32) CHARACTER SET ascii NOT NULL,
   `user_id` bigint(11) unsigned NOT NULL,
   `dbpath` varchar(32) CHARACTER SET ascii NOT NULL,
-  `created_time` bigint(11) NOT NULL
+  `created_time` bigint(11) NOT NULL,
+  `status` enum('normal','expired','outofquote','forbidden') DEFAULT NULL,
+  PRIMARY KEY (`code`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -42,9 +64,13 @@ CREATE TABLE `stats` (
   `user_id` bigint(11) unsigned NOT NULL,
   `dbpath` varchar(16) CHARACTER SET ascii NOT NULL,
   `count` bigint(12) NOT NULL,
+  `year` int(4) DEFAULT '2000',
+  `month` int(2) DEFAULT '12',
+  `day` int(2) DEFAULT '31',
+  `func_name` varchar(32) DEFAULT '-',
   PRIMARY KEY (`id`),
   KEY `idx_uid_service_db` (`user_id`,`dbpath`) USING BTREE
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -74,4 +100,4 @@ CREATE TABLE `users` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2010-03-06 23:53:02
+-- Dump completed on 2010-03-09 15:40:17

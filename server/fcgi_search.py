@@ -132,6 +132,7 @@ def function_wrapper(func,func_name):
             if ret["code"]!=200:
                 storage.log(dbh,auth["code"],auth['user_id'],auth["dbpath"], func_name, ret['code'],ret['msg'],ret["uuid"])
             else:
+                storage.log(dbh,auth["code"],auth['user_id'],auth["dbpath"], func_name, ret['code'],ret['msg'],ret["uuid"])
                 #接口调用正常的情况下,只做一个计数;
                 storage.increment(dbh,auth["user_id"],auth["dbpath"],func_name)
         except Exception,e:
