@@ -310,19 +310,23 @@ def _get_genericsearch_query(dbpath,queries):
     for field in dbdesc:
         qp.add_prefix(field,dbdesc[field]['prefix'])
         #add prefix 
-	qs=""
+    parsed_queries=[]
     unsegments=[]
     for q in queries:
         if dbdesc[q]["segment"]:
             terms=segment(queries[q])
+	        qs=""
             for t in terms:
                 qs= qs +  q + ":" + t[0] + " "
+            parsed_queries.append(qp.parse_query(qs))
         else:
             unsegments.append(q)
             #qs = q + ":" + queries[q] + " "
-    query = qp.parse_query(qs)
+    query = xapian.Query()
     for uq in unsegments:
         query=xapian.Query(xapian.Query.OP_AND,query,xapian.Query(dbdesc[uq]["prefix"]+queries[uq]))
+    for q parsed_queries :
+        query=xapian.Query(xapian.Query.OP_AND,query,q)
     return query
 
 def api_generic_search(dbpath,queries,offset=0,size=10):
