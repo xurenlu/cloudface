@@ -406,6 +406,7 @@ class _PHPRPC_Client {
             }
             $header = array();
             while (!feof($this->_socket) && (($line = fgets($this->_socket)) != "\r\n")) {
+                #print "header:$line\n";//hack by renlu
                 $line = explode(':', $line, 2);
                 $header[strtolower($line[0])][] =trim($line[1]);
             }

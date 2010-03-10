@@ -46,9 +46,10 @@ class AuthMiddleWare(object):
         self.app=app
     def __call__(self,env,start_response=None):
         users={"secret_key_code1":"xurenlu","secret_key_code2":"user2"}
-        code=env["QUERY_STRING"]
-        if not users.has_key(code):
-            return ('403 Error',[('Content-Type','text/plain')],['403 Invalid code'])
+        try:
+            code=env["QUERY_STRING"]
+        except:
+            code = "-"
         env["cloudface.session"]={"code":code} #phpformat.serialize({"count":1000}) 
         #print env
         #print env["cloudface.session"]
@@ -79,26 +80,32 @@ def function_wrapper(func,func_name):
     """gen new func ,and put a arg as the last argument"""
     def inner(session,*args):
         global dbpath_reg
-        realargs=[ i for i in args] 
-        code = session['code']
-
-        #开始鉴权
-        dbh=storage.Dbh(prepare_sql="set names utf8")
-        dbh.load_yaml("./etc/db.yaml")
-        dbh.connect()
-        auth=storage.authenticate(dbh,code)
-        if auth == None:
-            #查不到该code的信息,返回403
-            return {'code':403,'msg':"secret code invalid"}
-        if auth["status"] != "normal":
-            return {'code':401,'msg':"your code status is "+ auth['status']}
-        if func.func_code.co_varnames[0] == "dbpath" :
-            if  not args[0] == auth["dbpath"]:
-                return {'code':402,'msg':"this code is not for this database"}
-            if dbpath_reg.match(args[0]) == None:
-                return {'code':406,'msg':"dbpath must match regexp: /0-9a-zA-Z+/"}
-        else:
-            auth["dbpath"]="-"
+        try:
+            realargs=[ i for i in args] 
+            code = session['code']
+            #开始鉴权
+            dbh=storage.Dbh(prepare_sql="set names utf8")
+            dbh.load_yaml("./etc/db.yaml")
+            dbh.connect()
+            auth=storage.authenticate(dbh,code)
+            if auth == None:
+                #查不到该code的信息,返回403
+                return {'code':403,'msg':"secret code invalid"}
+            if auth["status"] != "normal":
+                return {'code':401,'msg':"your code status is "+ auth['status']}
+            if func.func_code.co_varnames[0] == "dbpath" :
+                if  not args[0] == auth["dbpath"]:
+                    return {'code':402,'msg':"this code is not for this database"}
+                if dbpath_reg.match(args[0]) == None:
+                    return {'code':406,'msg':"dbpath must match regexp: /0-9a-zA-Z+/"}
+            else:
+                auth["dbpath"]="-"
+        except Exception,e:
+            #print "error occured while authenticating:",e
+            return {"code":501}
+        except:
+            #print "error occured while authenticating."
+            return {"code":500}
         #print "function ",func_name," called"
         #print "received args,",args
         #print "session",session
@@ -120,7 +127,7 @@ def function_wrapper(func,func_name):
         try:
             ret=func(*realargs)
         except Exception,e:
-            print "function ",func_name," failed"
+            #print "function ",func_name," failed"
             pass
         #try:
         if not ret.has_key("code"):
@@ -136,7 +143,7 @@ def function_wrapper(func,func_name):
                 #接口调用正常的情况下,只做一个计数;
                 storage.increment(dbh,auth["user_id"],auth["dbpath"],func_name)
         except Exception,e:
-            print "error occured:",e
+            #print "error occured:",e
             pass
         #ret["code"],ret["msg"]
         #except Exception,e:

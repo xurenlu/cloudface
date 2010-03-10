@@ -264,7 +264,6 @@ def _simplesearch_get_query(dbpath,keyword):
     query_string = ' '.join(q)
     query = qp.parse_query(query_string)
     return xapian.Query(xapian.Query.OP_OR,query,xapian.Query("T"+keyword))
-    return query
 
 def api_simple_search(dbpath,keyword,offset=0,size=10):
     '''
@@ -277,7 +276,6 @@ def api_simple_search(dbpath,keyword,offset=0,size=10):
     - **size**:
     '''
     query=_simplesearch_get_query(dbpath,keyword)
-    print query
     matches=_query_match(dbpath,query,offset,size)
 
     # Display the results.
@@ -312,22 +310,35 @@ def _get_genericsearch_query(dbpath,queries):
         #add prefix 
     parsed_queries=[]
     unsegments=[]
-    for q in queries:
-        if dbdesc[q]["segment"]:
-            terms=segment(queries[q])
-	        qs=""
-            for t in terms:
-                qs= qs +  q + ":" + t[0] + " "
-            parsed_queries.append(qp.parse_query(qs))
+    try:
+        for q in queries:
+            if dbdesc[q]["segment"]:
+                terms=segment(queries[q])
+                qs=""
+                for t in terms:
+                    qs= qs +  q + ":" + t[0] + " "
+                parsed_queries.append(qp.parse_query(qs))
+            else:
+                parsed_queries.append( xapian.Query(dbdesc[q]["prefix"]+queries[q]))
+                #unsegments.append(q)
+                #qs = q + ":" + queries[q] + " "
+        #print parsed_queries
+        #print len(parsed_queries)
+        if len(parsed_queries)==0:
+            return xapian.Query()
+        elif len(parsed_queries)<2:
+            return parsed_queries[0]
         else:
-            unsegments.append(q)
-            #qs = q + ":" + queries[q] + " "
-    query = xapian.Query()
-    for uq in unsegments:
-        query=xapian.Query(xapian.Query.OP_AND,query,xapian.Query(dbdesc[uq]["prefix"]+queries[uq]))
-    for q parsed_queries :
-        query=xapian.Query(xapian.Query.OP_AND,query,q)
-    return query
+            lastq=parsed_queries[0]
+            i=0
+            for pq in parsed_queries:
+                if i > 0:
+                    lastq = xapian.Query(xapian.Query.OP_AND,lastq,pq)
+                i = i + 1
+            return lastq 
+    except Exception,e:
+        #print "some thing wrong,",e
+        return xapian.Query()
 
 def api_generic_search(dbpath,queries,offset=0,size=10):
     """
@@ -409,3 +420,9 @@ def api_get_methods(module=None):
         #if callable(sys.modules[__name__]) 
     return apis 
 
+def main():
+    _prepare_scws()
+    print api_generic_search("test1",{"author":"renlu.xu","text":"我们学习"})
+
+if __name__ == '__main__':
+    main()
