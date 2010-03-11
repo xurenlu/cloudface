@@ -131,6 +131,11 @@ def api_generic_init(dbpath,def_dict):
     @endcode
 
     """
+    if os.path.exists(DB_PREFIX+dbpath+".yml") :
+        return {"code":507,"msg":"db description file already exists"}
+    if os.path.exists(DB_PREFIX+dbpath):
+        return {"code":508,"msg":"database direcotry already exists"}
+
     ymlfile=open(DB_PREFIX+dbpath+".yml","w+")
     try:
         yaml.dump(def_dict,ymlfile)
@@ -145,6 +150,10 @@ def api_simple_init(dbpath):
     初始化一个简单搜索的数据库
     - **dbpath**:数据库名字
     '''
+    if os.path.exists(DB_PREFIX+dbpath+".yml") :
+        return {"code":507,"msg":"db description file already exists"}
+    if os.path.exists(DB_PREFIX+dbpath):
+        return {"code":508,"msg":"database direcotry already exists"}
     ymlfile=open(DB_PREFIX+dbpath+".yml","w+")
     try:
         def_dict=  {"doc_id":{"prefix":"I","segment":False},
