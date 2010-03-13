@@ -4,7 +4,7 @@ __usage__ = "%prog -n <num>"
 __version__ = "1.0.0"
 __author__ = "162cm <xurenlu@gmail.com>"
 
-import sys,os,re,uuid
+import sys,os,re,uuid,cgi
 sys.path.append("/usr/local/lib/python2.6/dist-packages/phprpc-3.0.0-py2.6.egg/phprpc")
 from phprpc import PHPRPC_WSGIApplication
 import datetime
@@ -45,11 +45,17 @@ class AuthMiddleWare(object):
     def __init__(self,app):
         self.app=app
     def __call__(self,env,start_response=None):
-        users={"secret_key_code1":"xurenlu","secret_key_code2":"user2"}
         try:
-            code=env["QUERY_STRING"]
+            qs=env["QUERY_STRING"]
+            code="-"
         except:
-            code = "-"
+            qs= "-"
+            code="-"
+        qs_array=cgi.urlparse.parse_qs(qs)
+        try:
+            code = qs_array["code"][0]
+        except:
+            pass
         env["cloudface.session"]={"code":code} #phpformat.serialize({"count":1000}) 
         #print env
         #print env["cloudface.session"]
@@ -102,7 +108,7 @@ def function_wrapper(func,func_name):
                 auth["dbpath"]="-"
         except Exception,e:
             #print "error occured while authenticating:",e
-            return {"code":501}
+            return {"code":501,"msg":str(e)}
         except:
             #print "error occured while authenticating."
             return {"code":500}
@@ -129,12 +135,14 @@ def function_wrapper(func,func_name):
         except Exception,e:
             #print "function ",func_name," failed"
             pass
-        #try:
-        if not ret.has_key("code"):
-            ret['code']=200
-        if not ret.has_key("msg"):
-            ret["msg"]="-"
-        ret["uuid"]=str(uuid.uuid4())
+        try:
+            if not ret.has_key("code"):
+                ret['code']=200
+            if not ret.has_key("msg"):
+                ret["msg"]="-"
+            ret["uuid"]=str(uuid.uuid4())
+        except:
+            ret={"code":509,"msg":"server side progrmming error.API must return a dict  which have a 'code' item.","uuid":str(uuid.uuid4())}
         try:
             if ret["code"]!=200:
                 storage.log(dbh,auth["code"],auth['user_id'],auth["dbpath"], func_name, ret['code'],ret['msg'],ret["uuid"])

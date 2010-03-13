@@ -90,7 +90,10 @@ def api_segment(string):
     好朋友 : nz : 7.96999979019
     @endcode
     '''
-    return _scws.get_res(string)
+    try:
+        return {"code":200,"data":_scws.get_res(string)}
+    except:
+        return {"code":510,"msg":"scws internal error"}
 
 def api_getkeywords(string,limit=5,attr='~v'):
     """return keywords of  text
