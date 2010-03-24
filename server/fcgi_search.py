@@ -5,11 +5,10 @@ __version__ = "1.0.0"
 __author__ = "162cm <xurenlu@gmail.com>"
 
 import sys,os,re,uuid,cgi
-sys.path.append("/usr/local/lib/python2.6/dist-packages/phprpc-3.0.0-py2.6.egg/phprpc")
-from phprpc import PHPRPC_WSGIApplication
+from phprpc.phprpc import PHPRPC_WSGIApplication
 import datetime
 from flup.server.fcgi import WSGIServer
-from phprpc import phpformat 
+from phprpc.phprpc import phpformat 
 from beaker.middleware import  SessionMiddleware
 import optparse
 import yaml
@@ -62,22 +61,6 @@ class AuthMiddleWare(object):
         #print env
         return self.app(env,start_response)
 
-def api_session_noarg(session):
-    if session.has_key("count"):
-        session["count"] = session["count"] + 1
-    else:
-        session["count"] = 1
-    return {"code":200,"count":session["count"]}
-
-def api_session_3args(arg1,arg2,arg3,session):
-    if session.has_key("count"):
-        session["count"] = session["count"] + 1
-    else:
-        session["count"] = 1
-    return {"code":200,"count":session["count"],"arg1":arg1,"arg2":arg2,"arg3":arg3}
-
-def api_nosession(testing):
-    return {"code":200,"testing":testing}
 
 global dbpath_reg
 dbpath_reg = re.compile("^[0-9a-zA-Z]+$")
@@ -93,7 +76,13 @@ def function_wrapper(func,func_name):
             dbh=storage.Dbh(prepare_sql="set names utf8")
             dbh.load_yaml("./etc/db.yaml")
             dbh.connect()
+        except Exception,e:
+            return {"code":510,"msg":" error: db init"+str(e)}
+        try:
             auth=storage.authenticate(dbh,code)
+        except:
+            return {"code":511,"msg":"error in authenticaate"}
+        try:
             if auth == None:
                 #查不到该code的信息,返回403
                 return {'code':403,'msg':"secret code invalid"}
@@ -162,15 +151,12 @@ def function_wrapper(func,func_name):
 
 def main(args_in, app_name="api"):
     import sys
-    socketfile=os.path.join(FCGI_SOCKET_DIR, 'floudface-fcgi-%s.socket' % app_name )
+    socketfile=os.path.join(FCGI_SOCKET_DIR, 'cloudface-fcgi-%s.socket' % app_name )
     app=PHPRPC_WSGIApplication("utf-8",False,"cloudface.session")
     import api_search
     api_search._prepare_scws()
     for method in get_public_methods(api_search):
         app.add(function_wrapper(method,method.__name__),method.__name__)
-    app.add(function_wrapper(api_session_noarg,api_session_noarg.__name__),api_session_noarg.__name__)
-    app.add(function_wrapper(api_session_3args,api_session_3args.__name__),api_session_3args.__name__)
-    app.add(function_wrapper(api_nosession,api_nosession.__name__),api_nosession.__name__)
     app = AuthMiddleWare(app)
 
     try:

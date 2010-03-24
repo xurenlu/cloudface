@@ -29,7 +29,6 @@ __doc__='''
 
 import sys,os
 sys.path.append("/usr/local/lib/python2.6/dist-packages/phprpc-3.0.0-py2.6.egg/phprpc")
-from phprpc import PHPRPC_WSGIApplication
 import datetime
 from flup.server.fcgi import WSGIServer
 import optparse
