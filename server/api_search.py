@@ -116,7 +116,7 @@ def api_getkeywords(string,limit=5,attr='~v'):
     Guido : e : 7 : 28.1651611328
     @endcode
     """
-    return _scws.get_tops(string,limit,attr)
+    return {"code":200,"data":_scws.get_tops(string,limit,attr)}
 
 def api_generic_init(dbpath,def_dict):
     """
@@ -186,7 +186,7 @@ def api_get_document(dbpath):
     '''
     return {'code':200,'data':'to be finished'}
 
-def api_simple_index(dbpath,dockey,text):
+def api_simple_index(dbpath,dockey,text,extra={}):
     '''
     简单地把text分词,然后做为Text域放进去
 
@@ -207,6 +207,14 @@ def api_simple_index(dbpath,dockey,text):
             doc.add_posting( stemmer(t[0]).lower(),i)
 
 
+    for idx in extra:
+        try:
+            print "set_value:"+ str(int(idx)) + ",data:"+ extra[idx] + "\n"
+            doc.add_value(int(idx),extra[idx])
+        except Exception,e:
+            print "error occured while write db\n" 
+            print e
+            pass
     article_id_term = "UNIQUE_ID"+dockey
     doc.add_term(article_id_term)
     doc.set_data(dockey)
@@ -215,7 +223,7 @@ def api_simple_index(dbpath,dockey,text):
     doc_new_id=db.replace_document(article_id_term,doc)
     return {"code":200,"doc_id":doc_new_id}
 
-def api_generic_index(dbpath,dockey,data):
+def api_generic_index(dbpath,dockey,data,extra={}):
     '''
     index a data ,segment needed fields automatically
     索引一个数据结构,一个Hash结构
@@ -243,13 +251,21 @@ def api_generic_index(dbpath,dockey,data):
             doc.add_term(desc[d]["prefix"]+str(data[d]).lower())
         #print "key:",k,"\tvalue:",v
 
+    for idx in extra:
+        try:
+            print "set_value:"+ str(int(idx)) + ",data:"+ extra[idx] + "\n"
+            doc.add_value(int(idx),extra[idx])
+        except Exception,e:
+            print "error occured while write db\n" 
+            print e
+            pass
     article_id_term = "UNIQUE_ID"+stemmer(dockey)
     doc.set_data(dockey)
     db=_get_wdb(dbpath)
     doc_new_id=db.replace_document(article_id_term,doc)
     return {"code":200,"data":doc_new_id}
 
-def _query_match(dbpath,query,offset,size):
+def _query_match(dbpath,query,offset,size,order_field=-1,order_field_desc=False):
     '''
     simple search时 需要分词但不需要前加缀
     通用search时,需要提前加分词 在这一步加前缀
@@ -257,6 +273,9 @@ def _query_match(dbpath,query,offset,size):
     db=_get_rdb(dbpath)
     enquire = xapian.Enquire(db)
     enquire.set_query(query)
+    if order_field!=-1 :
+        enquire.set_sort_by_value(order_field,order_field_desc)
+
     matches = enquire.get_mset(offset, size)
     return matches
 
@@ -276,7 +295,7 @@ def _simplesearch_get_query(dbpath,keyword):
     query = qp.parse_query(query_string)
     return xapian.Query(xapian.Query.OP_OR,query,xapian.Query("T"+keyword))
 
-def api_simple_search(dbpath,keyword,offset=0,size=10):
+def api_simple_search(dbpath,keyword,offset=0,size=10,order_field=-1,order_field_desc=False,get_values={}):
     '''
     search simple database
     简单数据库的索引
@@ -287,15 +306,26 @@ def api_simple_search(dbpath,keyword,offset=0,size=10):
     - **size**:
     '''
     query=_simplesearch_get_query(dbpath,keyword)
-    matches=_query_match(dbpath,query,offset,size)
+    matches=_query_match(dbpath,query,offset,size,order_field,order_field_desc)
 
     # Display the results.
     #print "%i results found." % matches.get_matches_estimated()
     #print "Results 1-%i:" % matches.size()
     docids=[]
+    if isinstance(get_values,dict):
+        all_values=get_values.values()
+    else:
+        all_values=get_values
     for m in matches:
-        docids.append({"data":m.document.get_data(),"doc_id":m.docid})
-        #print "%i: %i%% docid=%i [%s]" % (m.rank + 1, m.percent, m.docid, m.document.get_data())
+        dicttmp={}
+        for vl in all_values:
+            try:
+                dicttmp["value_"+str(vl)]=m.document.get_value(vl)
+            except:
+                pass
+        dicttmp["data"]=m.document.get_data()
+        dicttmp["doc_id"]=m.docid
+        docids.append(dicttmp)
     return {"code":200,"data":docids,"size":matches.size(),"query":str(query)}
 
 
@@ -351,7 +381,7 @@ def _get_genericsearch_query(dbpath,queries):
         #print "some thing wrong,",e
         return xapian.Query()
 
-def api_generic_search(dbpath,queries,offset=0,size=10):
+def api_generic_search(dbpath,queries,offset=0,size=10,order_field=-1,order_field_desc=False,get_values={}):
     """
     search a database
     搜索数据库,使用通用搜索
@@ -369,13 +399,26 @@ def api_generic_search(dbpath,queries,offset=0,size=10):
     - **size**:要返回的查询结果数
     """
     query=_get_genericsearch_query(dbpath,queries)
-    matches = _query_match(dbpath,query,offset,size)
+    matches = _query_match(dbpath,query,offset,size,order_field,order_field_desc)
     # Display the results.
 #    print "%i results found." % matches.get_matches_estimated()
 #    print "Results 1-%i:" % matches.size()
     docids=[]
+    if isinstance(get_values,dict):
+        all_values=get_values.values()
+    else:
+        all_values=get_values
     for m in matches:
-        docids.append({"data":m.document.get_data(),"doc_id":m.docid})
+        dicttmp={}
+        for vl in all_values:
+            try:
+                dicttmp["value_"+str(vl)]=m.document.get_value(vl)
+            except:
+                pass
+        dicttmp["data"]=m.document.get_data()
+        dicttmp["doc_id"]=m.docid
+        docids.append(dicttmp)
+        #docids.append({"data":m.document.get_data(),"doc_id":m.docid})
         #print "%i: %i%% docid=%i [%s]" % (m.rank + 1, m.percent, m.docid, m.document.get_data())
     return {"code":200,"data":docids,"size":matches.size(),"query":str(query)}
 
@@ -433,7 +476,17 @@ def api_get_methods(module=None):
 
 def main():
     _prepare_scws()
-    print api_generic_search("test1",{"author":"renlu.xu","text":"我们学习"})
+    #print api_generic_search("test1",{"author":"renlu.xu","text":"我们学习"})
+    #print api_simple_init( "orderdb")
+    #print "inited\n"
+    #api_simple_index("./orderdb","article1","我们都爱中国人",{"1":"00005"})
+    #api_simple_index("./orderdb","article2","他们都爱中国人",{"1":"00006"})
+    #api_simple_index("./orderdb","article3","中国人是世界上最老实的民族,才怪",{"1":"00003"})
 
+    print api_simple_search("orderdb","都爱",0,10)
+    #print api_simple_search("orderdb","中国人",0,10,1,False,{"1":1})
+    #print api_simple_search("orderdb","中国人",0,10,1,False,[1])
+    #print api_getkeywords("我们都还在这个大院里住着")
+    #print api_getkeywords("我们都还在这个大院里住着",40,"n")
 if __name__ == '__main__':
     main()
