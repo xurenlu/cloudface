@@ -1,0 +1,842 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+   "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+
+<title>b8: readme</title>
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+
+<meta name="dc.title" content="b8: readme" />
+<meta name="dc.creator" content="Tobias Leupold" />
+<meta name="dc.description" content="readme file of b8" />
+<meta name="dc.publisher" content="Tobias Leupold" />
+<meta name="dc.identifier" content="http://nasauber.de/" scheme="DCTERMS.URI" />
+<meta name="dc.source" content="http://nasauber.de/programme/b8/readme.htm" scheme="DCTERMS.URI" />
+<meta name="dc.language" content="en" />
+<meta name="dc.rights" content="Copyright (c) by Tobias Leupold" />
+
+<meta name="keywords" content="b8 readme file documentation" />
+
+<style type="text/css">
+
+h1 {
+	margin-top:1.2em;
+	margin-bottom:1em;
+}
+
+h2 {
+	margin-top:1.2em;
+	margin-bottom:1em;
+}
+
+h3 {
+	margin-top:1em;
+	margin-bottom:0.8em;
+}
+
+h4 {
+	margin-top:0.8em;
+	margin-bottom:0.6em;
+}
+
+pre {
+	font-size:small;
+	background-color:rgb(240, 245, 245);
+	margin-left:3em;
+	margin-right:3em;
+	padding-left:0.5em;
+	padding-right:0.5em;
+	border:solid 1px rgb(150, 150, 150);
+}
+
+code {
+	font-size:small;
+	background-color:rgb(240, 245, 245);
+	padding-left:0.3em;
+	padding-right:0.3em;
+	border:solid 1px rgb(150, 150, 150);
+}
+
+dl {
+	margin-left:1.5em;
+	margin-right:1em;
+}
+
+dt {
+	margin-bottom:0.4em;
+}
+
+dd {
+	margin-bottom:1em;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div>
+
+<h1>b8: readme</h1>
+
+<h1>Index</h1>
+
+<div id="index">
+
+<ol>
+	<li><a href="#descriptionofb8">Description of b8</a>
+	<ol>
+		<li><a href="#whatisb8">What is b8?</a></li>
+		<li><a href="#howdoesitwork">How does it work?</a></li>
+		<li><a href="#whatdoineedforit">What do I need for it?</a></li>
+		<li><a href="#whatsdifferent">What's different?</a></li>
+		<li><a href="#andwhyisitcalledb8">And why is it called b8?</a></li>
+	</ol>
+	</li>
+	<li><a href="#updatefrompriorversions">Update from prior versions</a>
+	<ol>
+		<li><a href="#updatefrombayesphpversion021orearlier">Update from bayes-php version 0.2.1 or earlier</a></li>
+		<li><a href="#updatefrombayesphpversion03to033">Update from bayes-php version 0.3 to 0.3.3 </a></li>
+	</ol>
+	</li>
+	<li><a href="#installation">Installation</a></li>
+	<li><a href="#configuration">Configuration</a>
+	<ol>
+		<li><a href="#anoteonsecurity">A note on security</a></li>
+		<li><a href="#configurationvaluesinsidetheclasses">Configuration values inside the classes</a></li>
+		<li><a href="#configfiles">Config files</a></li>
+		<li><a href="#b8sbaseconfiguration">b8's base configuration</a></li>
+		<li><a href="#configurationofthelexer">Configuration of the lexer</a></li>
+		<li><a href="#configurationofthestoragebackend">Configuration of the storage backend</a>
+		<ol>
+			<li><a href="#berkeleydb">BerkeleyDB</a></li>
+			<li><a href="#mysql">MySQL</a>
+			<ol>
+				<li><a href="#mysqlinamultiuserenvironment">MySQL in a multi user environment</a></li>
+			</ol>
+			</li>
+			<li><a href="#sqlite">SQLite</a></li>
+		</ol>
+		</li>
+		<li><a href="#configurationoftheinterface">Configuration of the interface</a>
+		<ol>
+			<li><a href="#basicinterfaceconfiguration">Basic interface configuration</a></li>
+			<li><a href="#configurationoftheinterfacesworkstoragebackend">Configuration of the interface's work storage backend</a></li>
+	</ol>
+	</li>
+	</ol>
+	</li>
+	<li><a href="#usingb8">Using b8</a>
+	<ol>
+		<li><a href="#creatinganewdatabase">Creating a new database</a></li>
+		<li><a href="#usingb8inyourscripts">Using b8 in your scripts</a></li>
+		<li><a href="#trainingb8">Training b8</a></li>
+		<li><a href="#classifyingtexts">Classifying texts</a></li>
+		<li><a href="#theadministrationinterface">The administration interface</a></li>
+	</ol>
+	</li>
+	<li><a href="#tipsonoperation">Tips on Operation</a></li>
+	<li><a href="#references">References</a></li>
+</ol>
+
+</div>
+
+<h1 id="descriptionofb8">Description of b8</h1>
+
+<h2 id="whatisb8">What is b8?</h2>
+
+<p>
+b8 is a spam filter implemented in <a href="http://php.net/">PHP</a> (formerly called "bayes-php"). It is intended to keep your weblog or guestbook spam-free. The filter can be used anywhere in your PHP code and tells you if a text is spam or not, using statistical text analysis. See <a href="#howdoesitwork">How does it work?</a> for details about this.<br />
+To be able to do this, b8 first has to learn some spam and some ham example texts to decide what's good and what's not. If it makes mistakes classifying unknown texts, they can be corrected and b8 learns from what was going wrong, getting better with each example text.
+</p>
+
+<p>
+Basically, b8 is a Bayesian spam filter like <a href="http://bogofilter.sourceforge.net/">Bogofilter</a> or <a href="http://spambayes.sourceforge.net/">SpamBayes</a>, but it is not intended to classify emails. On the other hand, I don't know a good spam filter (or any spam filter that isn't just example code how one <i>could</i> implement a Bayesian spam filter in PHP) that is intended to filter weblog or guestbook entries, and here we have the raison d'être for b8 ;-)<br />
+Caused by this fact, the way b8 works is slightly different from most of the Bayesian email spam filters out there. See <a href="#whatsdifferent">What's different?</a> if you're interested in the details.
+</p>
+
+<h2 id="howdoesitwork">How does it work?</h2>
+
+<p>
+b8 is a naive Bayesian Spam filter, basically using the technique described in Paul Graham's article "A Plan For Spam" <a href="http://paulgraham.com/spam.html">[1]</a>. The improvements proposed in Graham's article "Better Bayesian Filtering" <a href="http://paulgraham.com/better.html">[2]</a> and Gary Robinson's article "Spam Detection" <a href="http://radio.weblogs.com/0101454/stories/2002/09/16/spamDetection.html">[3]</a> have also been considered. See also "A Statistical Approach to the Spam Problem" <a href="http://linuxjournal.com/article/6467">[4]</a>.
+</p>
+
+<p>
+b8 cuts the text to classify to pieces, extracting stuff like email addresses, links and html tags. For each such token, it calculates a single probability for it being spam, based on what the filter has learned so far. When the token was not seen before, b8 trys to find similar ones using the "degeneration" described in <a href="http://paulgraham.com/better.html">[2]</a> and uses the most relevant value found. If really nothing is found, a default rating is set.<br />
+Then, b8 takes the most relevant values (which have a rating far from 0.5, which would mean we don't know what it is) and calculates the probability that the whole text is spam by the inverse chi-square function described in <a href="http://radio.weblogs.com/0101454/stories/2002/09/16/spamDetection.html">[3]</a>.<br />
+There are some parameters that can be set which influence the filter's behaviour (see below).
+</p>
+
+<p>
+In short words: you give b8 a text and get back a value between 0 and 1, saying it's ham when it's near 0 and saying it's spam when it's near 1.
+</p>
+
+<h2 id="whatdoineedforit">What do I need for it?</h2>
+
+<p>
+Not much ;-) You just need PHP on the server where b8 should be used (b8 works both with PHP 4 and 5) and a proper storage possibility for the wordlists. I strongly recommend using a <a href="http://sleepycat.com/">BerkeleyDB</a>. See below how you can check if you can use it and why. If the server's PHP wasn't compiled with BerkeleyDB support, a <a href="http://mysql.com/">MySQL</a> or <a href="http://sqlite.org/">SQLite</a> table can be used alternatively.
+</p>
+
+<h2 id="whatsdifferent">What's different?</h2>
+
+<p>
+b8 is designed to classify weblog or guestbook entries, not emails. So, it uses a slightly different technique than the others use.
+</p>
+
+<p>
+My experience was that such spam entries were quite short, sometimes just "123abc" as text and a link to a suspect homepage. Some spam bots don't even make a difference between e.&thinsp;g. the "name" and "text" fields and post their text as email address, for example. So, b8 just takes one string to classify, making no difference between "headers" and "text".<br />
+The other thing is, that most Bayesian filters count one token one time, no matter how often it appears in the text (as Graham describes it in <a href="http://paulgraham.com/spam.html">[1]</a>). b8 does count how often it is there and learns or considers this. Additionally, the number of learned ham and spam texts are saved and used as the calculation base for the single possibilities. Why this? Because a text containing one link (no matter where it points to, just indicated by a "http://" or a "www.") might not be spam, but a text with 20 links in it might be.
+</p>
+
+<p>
+But this also means that b8 might be good for classifying weblog or guestbook entries &ndash; but very likely, it will work quite poor when used for something else (like classifying emails). But as said above, for this task, there are a lot of very good filters out there.
+</p>
+
+<h2 id="andwhyisitcalledb8">And why is it called b8?</h2>
+
+<p>
+The initial name for the filter was (damn creative!) "bayes-php". There were two main reasons for searching another name: 1. "bayes-php" sucks. 2. the <a href="http://php.net/license/3_01.txt">PHP License</a> does not want that the name of a script written in PHP does contain "PHP". Read the <a href="http://php.net/license/">License FAQ</a> for a reasonable argumentation about this.
+</p>
+
+<p>
+Luckily, <a href="http://langt.net/">Tobias Lang</a> proposed the new name "b8". And these are the reasons why I chose this name:
+</p>
+
+<ol>
+<li>"bayes-php" is a "b" followed by 8 letters.</li>
+<li>"b8" is short and handy. Additionally, there was no program with the name "b8" or "bate"</li>
+<li>The English verb "to bate" means "to decrease" &ndash; and that's what b8 does: it decreases the number of spam entries in your weblog or guestbook!</li>
+<li>"b8" just sounds way cooler than "bayes-php" ;-)</li>
+</ol>
+
+<p>
+So &hellip; have a lot of fun using b8 :-)
+</p>
+
+<h1 id="updatefrompriorversions">Update from prior versions</h1>
+
+<p>
+If this is a new b8 installation, read on at the <a href="#installation">Installation</a> section!
+</p>
+
+<h2 id="updatefrombayesphpversion021orearlier">Update from bayes-php version 0.2.1 or earlier</h2>
+
+<p>
+Please first follow the database update instructions of the bayes-php-0.3 release if you update from a version prior to bayes-php-0.3 and then read the following paragraph about updating from a version &lt;=0.3.3.<br />
+As most people don't use such an old version (I hope so!), I haven't included the update scripts from bayes-php-0.3 in the current release anymore. If you have to do some work now: sorry ;-)
+</p>
+
+<h2 id="updatefrombayesphpversion03to033">Update from bayes-php version 0.3 to 0.3.3 </h2>
+
+<p>
+The configuration model of b8 has changed in version 0.4. The config files aren't PHP files anymore, so the easiest way to update is simply to change the new config files according to your needs (see below). You can just keep your database as it is. When you use MySQL as b8's storage backend, please read the following paragraph!
+</p>
+
+<p>
+<b>IMPORTANT: MySQL tables have to be updated!</b> MySQL does not handle text primary keys case sensitive by default (&hellip; and nobody noticed it ;-), but this is really important for the filter's performance! Please alter your table executing the following query:
+</p>
+
+<pre>
+ALTER TABLE &lt;table_name&gt; CHANGE token token VARCHAR(255) BINARY
+</pre>
+
+<p>
+This will make tokens case sensitive. No data will be lost doing this. BerkeleyDB and SQLite users are not affected.
+</p>
+
+<h1 id="installation">Installation</h1>
+
+<p>
+Installing b8 on your server is quite easy. You just have to copy the files you need to your server. To do this, you could just upload the whole <code>b8</code> directory to the base directory of your homepage.<br />
+A more minimalistic installation would be just to upload what you need. That is the <code>etc</code> directory, the <code>lexer</code> directory, the <code>storage</code> directory with only the storage backend you want to use and the two files <code>b8.php</code> and <code>shared_functions.php</code>.<br />
+The complete <code>interface</code> and <code>doc</code> directories aren't needed for just using the filter.
+</p>
+
+<p>
+That's it ;-)
+</p>
+
+<p>
+If you just want to have a look at b8, you probably don't want to set up the administration interface. If you don't want to use the interface, you neither have to install it, nor to configure it. If you do want the interface, you will need a realational database (MySQL) to use all of it's functions, even if you use BerekelyDB as b8's storage backend (and you should ;-). Read below about the difference between b8's storage backend and the work storage backend used by the interface.
+</p>
+
+<p>
+Anyway, the whole interface stuff is not needed by b8 to do it's work, it's just an optional feature.
+</p>
+
+<h1 id="configuration">Configuration</h1>
+
+<h2 id="configurationvaluesinsidetheclasses">Configuration values inside the classes</h2>
+
+<p>
+All configuration values are stored in the variable <code>config</code> inside the class being configured and can be changed after the class was loaded with e.&thinsp;g. <code>$b8->config['mindev'] = 0.1;</code>.
+</p>
+
+<h2 id="anoteonsecurity">A note on security</h2>
+
+The configuration files of b8 are plain text files that will normally be sent by the web server as-is if they are requested via HTTP. For this reason, one could, in case e.&thinsp;g. MySQL is used as b8's storage backend and no shared connection is used, read user names and passwords in clear text if one knows the URL of the configuration file.<br />
+As a consequence (and of course also because of the administation interface if used) I strongly recommend to protect the whole directory of b8 via <a class="extern" href="http://en.wikipedia.org/wiki/Htaccess">.htaccess</a> to prevent unauthorized access.
+
+<h2 id="configfiles">Config files</h2>
+
+<p>
+All config files are found in the <code>etc</code> directory. These are simple text files with the syntax <code>parameter = value</code>. Empty lines are ignored, just as everthing behind a <code>#</code> is. Please note that all values in the config files are case-sensitive.<br />
+When a config file isn't found or a value isn't set, the default settings are used.
+</p>
+
+<p>
+If you use Windows and edit these files with notepad.exe, don't be surprised about the missing newlines. It doesn't know how to handle UNIX line breaks since my old DOS times. perhaps, The Vista notepad does meanwhile ;-) Anyway, a configuration file edited with this brilliant piece of software will also work.
+</p>
+
+<p>
+The configuration options of the particular files are described below.
+</p>
+
+<h2 id="b8sbaseconfiguration">b8's base configuration</h2>
+
+<p>
+b8's base configuration file is <code>config_b8</code>. The following values can be set:
+</p>
+
+<dl>
+
+<dt><code>lexerType</code></dt>
+<dd>
+This defines the class used to transform a passed text to a list of tokens. At the moment, there is just one such class ("default"), so simply leave this to be <code>default</code>.
+</dd>
+
+<dt><code>databaseType</code></dt>
+
+<dd>
+
+<p>
+This defines what storage backend should be used to save the wordlist. Three database backends are availible: <code>dba</code>, <code>mysql</code> and <code>sqlite</code>.
+</p>
+
+<dl>
+
+<dt><code>dba</code></dt>
+<dd>
+This is the preferred storage backend. When choosing this option, b8 will use a <a href="http://www.oracle.com/database/berkeley-db/index.html">BerkeleyDB</a> to save the wordlist. This was the initial backend for the filter and remains the most performant. b8's storage model is optimized for this database, as it is really fast and fits perfectly to what the filter needs to do his work. All content is saved in a single file.<br />
+If you don't know whether your server's PHP can use a BerkeleyDB, just run the <code>dba_versioncheck.php</code> script from the <code>doc</code> directory on your server. It will list all availible DBA handlers. If there are handlers for BerkeleyDB, please use this backend.
+</dd>
+
+<dt><code>mysql</code></dt>
+<dd>
+As some webspace hosters don't allow using a BerkeleyDB (but please be sure to check if you could use it!), but most do provide a <a href="http://mysql.com/">MySQL</a> server, using a MySQL table for the wordlist is provided as an alternative storage method. As said above, b8 is programmed to use a BerkeleyDB. It doesn't use or need SQL to query the database. So, very likely, this will work less performant, produce a lot of unnecessary overhead (what you probably won't even notice anyway &hellip; ;-) and waste computing power. But it will do fine anyway!
+</dd>
+
+<dt><code>sqlite</code></dt>
+<dd>
+Laurent Goussard (&#108;&#111;&#114;&#97;&#110;&#103;&#101;&#114;&nbsp;&#97;&#116;&nbsp;&#102;&#114;&#101;&#101;&nbsp;&#46;&nbsp;&#102;&#114;) added a storage backend that uses an <a href="http://sqlite.org/">SQLite</a> table. In principle, it's the same like with MySQL, but perhaps with less overhead, as this is a fast, small library that stores an SQL database within a single file without running a server.<br />
+Please notice that this breaks PHP 4. You have to use PHP 5 for this storage backend.<br />
+Please also notice that I don't and can't use this backend &ndash; so when there's a bug in it, write an email to Laurent ;-)
+</dd>
+
+</dl>
+
+</dd>
+
+</dl>
+
+<p>
+The following ones are settings that influence the mathematical internals of the filter. If you want to experiment, feel free to play around with them; but be warned: the wrong settings of these values will result in poor performance or even "short-circuit" the filter.<br />
+Leave these values as they are unless you are sure that your changes will result in a better performance!
+</p>
+
+<p>
+The "Statistical discussion about b8" <a href="http://nasauber.de/programme/b8/discussion/">[5]</a> shows why the default values are the default ones.
+</p>
+
+<dl>
+
+<dt><code>useRelevant</code></dt>
+<dd>
+This tells b8 how many tokens should be used when calculating the spamminess of a text. The default setting is <code>15</code>. This seems to be a quite reasonable value. When using to many tokens, the filter will fail on texts filled with useless stuff or with passages from a newspaper, etc. not being very spammish.<br />
+The tokens counted multiple times (see above) are added in addition to this value. They don't replace other ratings.
+</dd>
+
+<dt><code>minDev</code></dt>
+<dd>
+This defines a minumun deviation from 0.5 that a token's rating must have to be considered when calculating the spamminess. Tokens with a rating closer to 0.5 than this value will simply be skipped.<br />
+If you don't want to use this feature, set this to <code>0</code>. Defaults to <code>0.2</code>. Read <a href="http://nasauber.de/programme/b8/discussion/">[5]</a> before increasing this.
+</dd>
+
+<dt><code>robX</code></dt>
+<dd>
+This is Gary Robinson's "x" constant. A completely unknown token will be rated with the value of <code>robX</code>. The default <code>0.5</code> seems quite reasonable, as we can't say if a token that also can't be rated by degeneration is good or bad.<br />
+If your experience is that you receive much more spam as ham or vice versa, you could change this setting accordingly.
+</dd>
+
+<dt><code>robS</code></dt>
+<dd>
+This is Gary Robinson's "s" constant. This is essentially the probability that the <code>robX</code> value is the correct one for an unknown token. It will also shift the probability of rarely seen tokens towards this value, if the token has been in ham and spam so far. The default is <code>0.3</code><br />
+See <a href="http://radio.weblogs.com/0101454/stories/2002/09/16/spamDetection.html">[3]</a> for a closer description of the "s" constant and read <a href="http://nasauber.de/programme/b8/discussion/">[5]</a> for specific information about this constant in b8's algorithms.
+</dd>
+
+<dt><code>sharpRating</code></dt>
+<dd>
+If set to <code>TRUE</code>, b8 does a quite harsh rating of tokens that have been only in ham or only in spam (as proposed in <a href="http://paulgraham.com/better.html">[2]</a>): if the token was just in spam or ham less than 10 times, it gets rated with 0.9998 or 0.0002. With more than 10 times, it is rated with 0.9999 or 0.0001.<br />
+This has been the (non-changeable) default setting since version 0.2 but isn't anymore, as the enhanced probability calculation proposed in <a href="http://radio.weblogs.com/0101454/stories/2002/09/16/spamDetection.html">[3]</a> shows significantly better results <a href="http://nasauber.de/programme/b8/discussion/">[5]</a>.<br />
+If you really want to set this to to <code>TRUE</code> and experience better results with it, let me know why ;-)
+</dd>
+
+</dl>
+
+<h2 id="configurationofthelexer">Configuration of the lexer</h2>
+
+<p>
+The lexer class transforms the string passed to b8 in an array of single tokens. Initially, this was a part of the filter itself, but if anybody wanted to write a "special" lexer, it can be done quite easy when it's a single class.
+</p>
+
+<p>
+These are the settings in <code>config_lexer</code>, that the default lexer takes:
+</p>
+
+<dl>
+
+<dt><code>minSize</code></dt>
+<dd>
+This is the minimal length a token has to have. Defaults to <code>3</code>.
+</dd>
+
+<dt><code>maxSize</code></dt>
+<dd>
+This is the maximal length a token can have. Theoretically, there's no limit when using BerkeleyDB or SQLite (255 for MySQL), but it makes no sense to store very long tokens, as they would be nonsense very likely. Defaults to <code>30</code> which should be really sufficient.
+</dd>
+
+<dt><code>allowNumbers</code></dt>
+<dd>
+Sets whether to accept pure numbers ("123456"). Defaults to <code>FALSE</code>.
+</dd>
+
+</dl>
+
+<h2 id="configurationofthestoragebackend">Configuration of the storage backend</h2>
+
+<p>
+The configuration of b8's storage backend is done in <code>config_storage</code>. One setting is common for all backends:
+</p>
+
+<dl>
+<dt><code>createDB</code></dt>
+<dd>
+This sets whether a new database should be created. See below for how to do this. Defaults to <code>FALSE</code>. See <a href="#creatinganewdatabase">Creating a new database</a> for how to create a new database.
+</dd>
+</dl>
+
+<p>
+The other values to set depend of the database backend used:
+</p>
+
+<h3 id="berkeleydb">BerkeleyDB</h3>
+
+<p>
+When using a BerkeleyDB, the following values can be set:
+</p>
+
+<dl>
+
+<dt id="bdbfile"><code>dbFile</code></dt>
+<dd>
+This is the filename of the file which will be used as the database. Defaults to <code>wordlist.db</code>.<br />
+This path is relative to the base directory of b8, so if you put b8 in <code>/b8/</code> on your server and used <code>wordlist.db</code> here, the file would be <code>/b8/wordlist.db</code> (of course in the document root of the server, not the real <code>/</code> root directory). If you wanted to use <code>/wordlist.db</code>, you could put in here <code>../wordlist.db</code>.<br />
+An absolute path name starting with <code>/</code> will be used as-is.
+</dd>
+
+<dt><code>dbVersion</code></dt>
+<dd>
+This is the DBA database handler used when connecting to the database. Defaults to <code>db4</code>. When you don't know which one to use, simply run the script <code>doc/dba_versioncheck.php</code> on your server. It will show you all availible and suitable handlers.
+</dd>
+
+</dl>
+
+<h3 id="mysql">MySQL</h3>
+
+<p>
+When using a MySQL table, we essentially only need one setting:
+</p>
+
+<dl>
+<dt><code>tableName</code></dt>
+<dd>
+This is the name of the table containing b8's wordlist. Defaults to <code>b8_wordlist</code>.
+</dd>
+</dl>
+
+<p>
+If you use MySQL as storage backend for b8, your guestbook or weblog will use it, too, I think. So, if you connect MySQL anyway in the script that uses b8, simply pass the return value of <code>mysql_connect()</code> (which is a MySQL-link resource) to b8 as a parameter. Then, b8 will use the same resource to query MySQL.<br />
+See also the below <a href="#passresourceexample">example</a> code doing this.
+</p>
+
+<p>
+If you want b8's MySQL storage class to set up it's own MySQL connection (e.&thinsp;g. when b8's wordlist is stored in another database or on another server, you can put your access data in the config file:
+</p>
+
+<dl>
+
+<dt><code>host</code></dt>
+<dd>
+The host to connect
+</dd>
+
+<dt><code>user</code></dt>
+<dd>
+The username to use
+</dd>
+
+<dt><code>pass</code></dt>
+<dd>
+The password to use
+</dd>
+
+<dt><code>db</code></dt>
+<dd>
+The database to use
+</dd>
+
+</dl>
+
+<p>
+I think in most cases, you can simply pass your existing resource link to b8. But please note that b8 does insist on a resource link (no random shots anymore since version 0.4 ;-) &ndash; so if no resource was passed, it will try to set up it's own connection.
+</p>
+
+<h4 id="mysqlinamultiuserenvironment">MySQL in a multi user environment</h4>
+
+<p>
+I'm pretty sure you don't want to use the functionality described below when you just set up a b8 installation on your home page.
+</p>
+
+<p>
+I got requests that the MySQL storage class should be able to set the table's name dynamically without changing the configuration file, so that one b8 installation can be used by multiple users. In particular, this was necessary to embed b8 in an add-on for the <a href="http://redaxo.de/">Redaxo</a> CMS.
+</p>
+
+<p>
+Ever since version 0.4.3, one can pass either just a MySQL-resource link to b8 when using the MySQL storage backend (as described above), or an array, containing one of or both <code>mysqlRes</code> and <code>tableName</code> as keys. If <code>tableName</code> is passed, the value stored here will be used as MySQL's b8 table instead of the one stored in the config file (and no table with the name from the config file will be necessary to construct the storage class).
+</p>
+
+<p>
+An example for creating a new b8 instance and passing both a MySQL-link resource and a table name would be:
+</p>
+
+<pre>
+$b8 = new b8(array('mysqlRes' => $mysqlRes, 'tableName' => $tableName));
+</pre>
+
+<p>
+As this is quite a special case for usage of b8, the default behaviour to simply pass a MySQL-link resource to b8 described in the <a href="#passresourceexample">example</a> below works anyway of course.<br />
+</p>
+
+<h3 id="sqlite">SQLite</h3>
+
+<p>
+When using SQLite, the following values can be set:
+</p>
+
+<dl>
+
+<dt><code>sqliteFile</code></dt>
+<dd>
+This is the filename of the file which will be used as the database. Defaults to <code>wordlist.db</code>.<br />
+The path given here will be handeled in the same way as the <code><a href="#bdbfile">dbFile</a></code> parameter of the BerkeleyDB configuration.
+</dd>
+
+<dt><code>tableName</code></dt>
+<dd>
+This is the name of the table containing b8's wordlist. Defaults to <code>b8_wordlist</code>.
+</dd>
+
+</dl>
+
+<p>
+As with <a href="#mysql">MySQL</a>, you can also pass an existing SQLite-link resource when creating a new b8 object to use an existing database connecting rather than letting b8 make it's own one.
+</p>
+
+<h2 id="configurationoftheinterface">Configuration of the interface</h2>
+
+<p>
+As said above: if you don't need or want to use the interface, you don't have to configure it (and of course, you also don't have to configure it's work storage backend).
+</p>
+
+<p>
+If you want a quick setup, just to have a look at b8, or simply don't want the interface, read on at <a href="#usingb8">Using b8</a>.
+</p>
+
+<h3 id="basicinterfaceconfiguration">Basic interface configuration</h3>
+
+<p>
+This is done in <code>config_interface</code>. The following values can be set:
+</p>
+
+<dl>
+
+<dt><code>workStorage</code></dt>
+<dd>
+Since version 0.4, b8 creates a queryable SQL table with the calculated and splitted data of the real database for the interface. The normal database works fine and very performant in normal operation, but it can't do SQL (b8 is intended to be used with a BerkeleyDB, as said above :-). But we want to have this here, as the whole database had to be parsed each time you do some query like counting all tokens otherwise.<br />
+In short: we need an additional storage method. At this time, only a MySQL work storage backend exists, so this is set to <code>mysql</code> by default.
+</dd>
+
+<dt><code>shareConnection</code></dt>
+<dd>
+The interface has to set up a link to the storage backend that saves the work database. If this is the same like used for b8's storage class, it's resource link can be passed to it by the interface (e.&thinsp;g. when MySQL is used for both b8's storage class and the interface's work storage class).<br />
+As I assume that BerkeleyDB is used for b8, this defaults to <code>FALSE</code>.
+</dd>
+
+</dl>
+
+<h3 id="configurationoftheinterfacesworkstoragebackend">Configuration of the interface's work storage backend</h3>
+
+<p>
+This is done in <code>config_storage_work</code>. When using MySQL, the following values can be set:
+</p>
+
+<dl>
+
+<dt><code>tableName</code></dt>
+<dd>
+The name of the table that will be created for the work database. Defaults to <code>b8_work</code>.
+</dd>
+
+<dt><code>host</code></dt>
+<dd>
+The host to connect
+</dd>
+
+<dt><code>user</code></dt>
+<dd>
+The username to use
+</dd>
+
+<dt><code>pass</code></dt>
+<dd>
+The password to use
+</dd>
+
+<dt><code>db</code></dt>
+<dd>
+The database to use
+</dd>
+
+</dl>
+
+<h1 id="usingb8">Using b8</h1>
+
+<p>
+Now, that everything is configured, you can start to use b8. A sample script that shows what can be done with the filter exists in <code>example/</code>. The best thing for testing how all this works is to use this script before using b8 in your own scripts.
+</p>
+
+<h2 id="creatinganewdatabase">Creating a new database</h2>
+
+<p>
+This is quite easy. Just set <code>createDB</code> to <code>TRUE</code> in <code>config_storage</code> and do something with b8 one time. E.&thinsp;g. try to classify or learn a text. The database will be created, but the filter won't do anything unless this flag is removed from the config file.
+</p>
+
+<p>
+If you use MySQL, this is really the only thing you have to do. When using BerkeleyDB or SQLite, the directory where the new database will be created has to be writable for the server's user. very likely, you have to set full write access to that directory to allow this (<code>chmod 0777 &lt;dir&gt;</code>), so that permissions will be <code>drwxrwxrwx</code> afterwards. This can be done e.&thinsp;g. with your FTP or SSH client.
+</p>
+
+<p>
+After the database has been created, remove <code>createDB = TRUE</code> from <code>config_storage</code> or set it to <code>FALSE</code>.
+</p>
+
+<h2 id="usingb8inyourscripts">Using b8 in your scripts</h2>
+
+<p>
+This is also quite easy :-) Have a look at the example script in <code>example/</code> on how to do this. You could e.&thinsp;g. put the following code in your scripts:
+</p>
+
+<pre>
+# Include the b8 code
+require_once "{$_SERVER['DOCUMENT_ROOT']}/b8/b8.php";
+
+# Create a new b8 instance
+$b8 = new b8;
+
+# Check if everything worked smoothly
+if(!$b8-&gt;constructed) {
+	echo "&lt;b&gt;example:&lt;/b&gt; Could not initialize b8. Truncating.";
+	exit;
+}
+</pre>
+
+<p>
+The variable <code>constructed</code> indicates whether b8 was set up properly (<code>TRUE</code>) or not (<code>FALSE</code>). All classes used in b8 have the same functionality. Doing it in this way is <i>crappy</i>. As PHP 4's object model is &hellip; but as I want b8 to be compatible with PHP 4, and this was (in my opinion) the only relatively "clean" way to make b8 run with PHP 4 and PHP 5.<br />
+Perhaps, the PHP 4 compatibility will be booted out one day and this stuff will be implemented less sucking. So please don't hate me for writing crappy PHP code &ndash; I know it better, but I'm forced to do it in this way ;-)
+</p>
+
+<p id="passresourceexample">
+When using MySQL as b8's storage backend, you will connect your database anyway very likely before using b8. Perhaps, you will also do that when using SQLite. A sample for passing the existing MySQL-link resource to b8 would be (to be used in an analogous way with SQLite):
+</p>
+
+<pre>
+$host = "127.0.0.1";
+$user = "user";
+$pass = "pass";
+$db   = "mydb";
+
+$mysqlRes = mysql_connect($host, $user, $pass);
+
+if(!$mysqlRes)
+	die("&lt;b&gt;Example:&lt;/b&gt; Could not connect to MySQL (" . mysql_error() . ")&lt;br /&gt;\n");
+
+mysql_select_db($db) or die("&lt;b&gt;Example:&lt;/b&gt; Could not select database \"$db\". Truncating.&lt;br /&gt;\n");
+
+# Include the b8 code
+require_once "{$_SERVER['DOCUMENT_ROOT']}/b8/b8.php";
+
+# Create a new b8 instance and pass the MySQL-link resource to b8
+$b8 = new b8($mysqlRes);
+
+# Check if everything worked smoothly
+if(!$b8->constructed) {
+	echo "&lt;b&gt;example:&lt;/b&gt; Could not initialize b8. Truncating.";
+	exit;
+}
+</pre>
+
+<p>
+After b8 has been set up, it's functions can be used in an object oriented way. E.&thinsp;g. you want to use it's <code>learn()</code> function (see below) to register a ham text, you would use the following code (assuming the variable <code>$b8</code> contains the b8 instance):
+</p>
+
+<pre>
+$text = "This is the text to learn";
+$b8->learn($text, "ham");
+</pre>
+
+<h2 id="trainingb8">Training b8</h2>
+
+<p>
+Before b8 can decide whether a text is spam or ham, you have to tell it what you consider as spam or ham. At least one learned spam and one learned ham text is needed to calculate anything.<br />
+For doing this, the following functions are provided (and can be nicely run with the example script):
+</p>
+
+<dl>
+
+<dt><code>learn($text, $category)</code></dt>
+<dd>
+This saves the reference text <code>$text</code> in the category <code>$category</code>. This can be either <code>"ham"</code> or <code>"spam"</code> (case-sensitive!).
+</dd>
+
+<dt><code>unlearn($text, $category)</code></dt>
+<dd>
+This deletes the reference text <code>$text</code> from the category <code>$category</code>.<br />
+This function just exists to delete a text from a category in which is has been accidentally stored before. When you store a ham text in spam and you have a lot words, this will not have much influence on b8 anyway.<br />
+<b>Don't delete a spam text from ham after saving it in spam or vice versa, as long you don't have stored it accidentally in the wrong category before!!!</b><br />
+This will break the filter after a time (as the counter for saved ham texts will reach 0 one day, although you have ham tokens stored). Anyway, this makes no sense at all, as the text wasn't stored in spam or ham before and can't be removed from it for this reason.
+</dd>
+
+</dl>
+
+<h2 id="classifyingtexts">Classifying texts</h2>
+
+<p>
+This is done by b8's function <code>classify($text)</code>. This function takes the text in <code>$text</code>, rates it and returns a float value between 0 and 1.<br />
+A value close to 0 is more likely ham and a value close to 1 is more likely spam. What to do with this value is <i>your</i> business ;-) See <a href="#tipsonoperation">Tips on Operation</a> below.
+</p>
+
+<h2 id="theadministrationinterface">The administration interface</h2>
+
+<p>
+b8 comes with a database administration interface. This is found in the <code>interface/</code> directory.
+</p>
+
+<p>
+The following two function groups just concerning b8's database, and therefor, no relational database connection has to be defined in addition to b8's storage backend. Values set in the config files to configure such a connection won't be used using these functions.
+</p>
+
+<dl>
+
+<dt><b>Database backup/recovering</b></dt>
+
+<dd>
+Here, you can make a (storage backend independent) backup of your database. This database dump will be stored in a plain text file. You can recover such a backup later by merging it into your existing database (existing token will be updated, non-existing ones will be added) or empty the database before recovering. Both variants can be done here.
+</dd>
+
+<dt><b>Database optimization</b></dt>
+
+<dd>
+This will optimize the internal structure of your database and e.&thinsp;g. delete wasted space that eventually shows up after a lot of database transactions. Anyway, it won't hurt to do this, even if the database is already optimized.
+</dd>
+
+</dl>
+
+<p>
+The other functions use an SQL work database, which has to be configured. Why we need this is explained above.
+</p>
+
+<dl>
+
+<dt><b>Work database creation / b8 database sync</b></dt>
+<dd>
+Here, a work database can be created from b8's current wordlist. The table containing it will be wiped and re-filled completely every time a work directory is created.<br />
+When syncing b8's database with the work database, it will first be emptied and then filled with the work database's data. <b>Have a backup when doing this! All data could be lost!</b>
+</dd>
+
+<dt><b>Database info</b></dt>
+<dd>
+This will output some information about the number of learned texts and tokens, etc.
+</dd>
+
+<dt><b>Database edit interface</b></dt>
+<dd>
+Here the work database can be changed or queried. This can be done by a nice interface or by direct SQL calls.<br />
+<b>Important:</b> This is essentially not necessary. It was written for debugging initially. I think the database won't grow so big that you really have to delete anything from it so fast &hellip; but it can be done anyway. b8 logs the date when a token was seen for the last time, so one could delete very old tokens that really appeared just once from time to time.<br />
+<b>Don't change counts from tokens</b> as long as you really know what you are doing. Note that these statistics are really objective. If your girlfriend's name is the highest rated token, it really appeard in all the spam texts. If you like it or not ;-) so &ndash; just let the filter do his work.
+</dd>
+
+</dl>
+
+<p>
+Anyway, whatever you do with the work database, it won't affect b8's wordlist, until you sync it with the work database.
+</p>
+
+<h1 id="tipsonoperation">Tips on Operation</h1>
+
+<p>
+For the practical use, I advise to give the filter all data availible. E.&thinsp;g. name, email address, homepage, IP address und of course the actual text should be stored in a variable (e.&thinsp;g. with a <code>\n</code> after each block) and then be classified. The learning should also be done with all data availible.<br />
+Saving the IP address is probably only meaningful for spam entries, because spammers often use the same IP address multiple times. In principle, you can leave out the IP of ham entries.
+</p>
+
+<p>
+You can use b8 e.&thinsp;g. in a guestbook script and let it classify the text before saving it. Everyone has to decide which rating is necessary to classify a text as "spam", but a rating of >= 0.8 seems to be reasonable for me.<br />
+The email filters out there mostly use > 0.9 or even > 0.99; but keep in mind that they have way more data to analyze in most of the cases. A guestbook entry may be quite short, especially when it's spam.<br />
+If one expects the spam to be in another language that the ham entries or the spams are very short normally, one could also think about a limit of 0.7.
+</p>
+
+<p>
+In my opinion, a autolearn function is very handy. I save spam messages (rated with more than 0.7) with a rating higher than 0.8 but less than 0.9 automatically as spam. I don't do this with ham messages in an automated way to prevent the filter from saving a false negative as ham and then classifying and learning all the spam as ham when I'm on holidays ;-)
+</p>
+
+<p>
+Anyway, as long as I use b8, I have just a few false negatives (spam messages that were classified as ham) and not one false positive (ham message that was classified as spam) after about 150 learned ham and spam texts.<br />
+This results in a sensitivity of about 99&thinsp;% and a specifity of 100&thinsp;% for me. I hope, you'll get the same good results :-)
+</p>
+
+<h1 id="references">References</h1>
+
+<div>
+<ol>
+<li><a href="http://paulgraham.com/spam.html">A Plan For Spam</a></li>
+<li><a href="http://paulgraham.com/better.html">Better Bayesian Filtering</a></li>
+<li><a href="http://radio.weblogs.com/0101454/stories/2002/09/16/spamDetection.html">Spam Detection</a></li>
+<li><a href="http://linuxjournal.com/article/6467">A Statistical Approach to the Spam Problem</a></li>
+<li><a href="http://nasauber.de/programme/b8/discussion/">Statistical discussion about b8</a></li>
+</ol>
+</div>
+
+<div style="text-align:right;">
+Tobias Leupold (&#116;&#111;&#98;&#105;&#97;&#115;&nbsp;&#46;&nbsp;&#108;&#101;&#117;&#112;&#111;&#108;&#100;&nbsp;&#97;&#116;&nbsp;&#119;&#101;&#98;&nbsp;&#46;&nbsp;&#100;&#101;)<br />
+<a href="http://nasauber.de/">http://nasauber.de/</a>
+</div>
+
+</div>
+
+</body>
+
+</html>

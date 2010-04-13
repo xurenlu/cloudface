@@ -72,13 +72,7 @@ def proxy_wrapper(func_name):
                 return {'code':403,'msg':"secret code invalid"}
             if auth["status"] != "normal":
                 return {'code':401,'msg':"your code status is "+ auth['status']}
-            if func.func_code.co_varnames[0] == "dbpath" :
-                if  not args[0] == auth["dbpath"]:
-                    return {'code':402,'msg':"this code is not for this database"}
-                if dbpath_reg.match(args[0]) == None:
-                    return {'code':406,'msg':"dbpath must match regexp: /0-9a-zA-Z+/"}
-            else:
-                auth["dbpath"]="-"
+            auth["dbpath"]="-"
         except Exception,e:
             return {"code":501,"msg":str(e)}
         except:
@@ -88,14 +82,10 @@ def proxy_wrapper(func_name):
         current_len=len(args)
         #把session传过去
         try:
-            client = PHPRPC_Client('http://localhost/b8/api.php')  
-            print client
+            client = PHPRPC_Client('http://cloudapi.info/b8/api.php')  
             clientProxy = client.useService()  
             #comment={'ip':'127.0.0.1','urls':['http://localhost/'],'text':'我们都是中国人'}
             ret=client.api_execute(func_name,args)
-            print ret
-            print "func_name",func_name
-            print "args:",args
             #ret=func(*realargs)
         except Exception,e:
             print "error 102:" + str(e)
