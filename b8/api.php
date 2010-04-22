@@ -115,20 +115,20 @@ function api_test_comment($comment){
     {
         //testing if the source ip is in the whitelist or the blacklist;
         $ip_expire=$mem->get(PREFIX."ipwhitelist.".$comment["ip"]);
-        if($ip_expire && $ip_expire>TIME)
-            return 0;
+        if($ip_expire )
+            return array("score"=>0,"code"=>200,"data"=>$comment);
         unset($ip_expire);
 
         $ip_expire=$mem->get(PREFIX."ipblacklist.".$comment["ip"]);
-        if($ip_expire && $ip_expire>TIME)
-            return 1;
+        if($ip_expire )
+            return array("score"=>1,"code"=>200,"data"=>$comment);
         unset($ip_expire);
         //testing if the urls were in the blacklist;
         foreach($comment["urls"] as $url){
             if(!empty($url)){
                 $url_expire=$mem->get(PREFIX."urlblacklist.".$url);
-                if($url_expire && $url_expire>TIME)
-                    return 1;
+                if($url_expire )
+                    return array("score"=>1,"code"=>200,"data"=>$comment);
                 unset($url_expire);
             }
         }
@@ -136,8 +136,8 @@ function api_test_comment($comment){
         foreach($words as $w=>$count){
             if(!empty($w)){
                 $w_expire=$mem->get(PREFIX."wordblacklist.".$w);
-                if($w_expire && $w_expire>TIME)
-                    return 1;
+                if($w_expire )
+                    return array("score"=>1,"code"=>200,"data"=>$comment);
             }
         }
         //now return the b8 score:
