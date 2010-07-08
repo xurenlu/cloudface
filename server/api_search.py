@@ -1,7 +1,7 @@
-#!/home/renlu/bin/bin/python
+#!/usr/bin/python
 #coding:utf-8
 __usage__ = "%prog -n <num>"
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "162cm <xurenlu@gmail.com>"
 __doc__='''
 + 概要 +
@@ -211,17 +211,22 @@ def api_simple_index(dbpath,dockey,text,extra={}):
         try:
             print "set_value:"+ str(int(idx)) + ",data:"+ extra[idx] + "\n"
             doc.add_value(int(idx),extra[idx])
+            article_id_term = "UNIQUE_ID"+dockey
+        except:
+            pass
+        try:
+            article_id_term = "UNIQUE_ID"+dockey
+            doc.add_term(article_id_term)
+            doc.set_data(dockey)
+            db=_get_wdb(dbpath)
+            #print "replacing document:",article_id_term
+            doc_new_id=db.replace_document(article_id_term,doc)
+            return {"code":200,"doc_id":doc_new_id}
         except Exception,e:
             print "error occured while write db\n" 
-            print e
+            print e,"dbpath:",dbpath
             pass
-    article_id_term = "UNIQUE_ID"+dockey
-    doc.add_term(article_id_term)
-    doc.set_data(dockey)
-    db=_get_wdb(dbpath)
-    #print "replacing document:",article_id_term
-    doc_new_id=db.replace_document(article_id_term,doc)
-    return {"code":200,"doc_id":doc_new_id}
+    return {"code":800,"data":"unkown error"}
 
 def api_generic_index(dbpath,dockey,data,extra={}):
     '''
@@ -311,22 +316,25 @@ def api_simple_search(dbpath,keyword,offset=0,size=10,order_field=-1,order_field
     # Display the results.
     #print "%i results found." % matches.get_matches_estimated()
     #print "Results 1-%i:" % matches.size()
-    docids=[]
-    if isinstance(get_values,dict):
-        all_values=get_values.values()
-    else:
-        all_values=get_values
-    for m in matches:
-        dicttmp={}
-        for vl in all_values:
-            try:
-                dicttmp["value_"+str(vl)]=m.document.get_value(vl)
-            except:
-                pass
-        dicttmp["data"]=m.document.get_data()
-        dicttmp["doc_id"]=m.docid
-        docids.append(dicttmp)
-    return {"code":200,"data":docids,"size":matches.size(),"query":str(query)}
+    try:
+        docids=[]
+        if isinstance(get_values,dict):
+            all_values=get_values.values()
+        else:
+            all_values=get_values
+        for m in matches:
+            dicttmp={}
+            for vl in all_values:
+                try:
+                    dicttmp["value_"+str(vl)]=m.document.get_value(vl)
+                except:
+                    pass
+            dicttmp["data"]=m.document.get_data()
+            dicttmp["doc_id"]=m.docid
+            docids.append(dicttmp)
+        return {"code":200,"data":docids,"size":matches.size(),"query":str(query)}
+    except Exception,e:
+        return {"code":999,"data":str(e)}
 
 
 def api_simple_search_count(dbpath,keyword):
@@ -454,6 +462,9 @@ def api_remove_document(dbpath,docid):
     except:
         return {"code":500,"msg":"nothing removed"}
 
+def api_version():
+    return {"code":200,"data": __version__}
+
 def api_get_methods(module=None):
     '''
     return methods that  begins with 'api'
@@ -476,6 +487,7 @@ def api_get_methods(module=None):
 
 def main():
     _prepare_scws()
+    print cnseg("我们是中国人")
     #print api_generic_search("test1",{"author":"renlu.xu","text":"我们学习"})
     #print api_simple_init( "orderdb")
     #print "inited\n"

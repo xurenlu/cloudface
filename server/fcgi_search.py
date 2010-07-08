@@ -1,4 +1,4 @@
-#!/home/renlu/bin/bin/python
+#! /usr/bin/python
 #coding:utf-8
 __usage__ = "%prog -n <num>"
 __version__ = "1.0.0"
@@ -8,8 +8,8 @@ import sys,os,re,uuid,cgi
 from phprpc.phprpc import PHPRPC_WSGIApplication
 import datetime
 from flup.server.fcgi import WSGIServer
+#from fcgi import WSGIServer
 from phprpc.phprpc import phpformat 
-from beaker.middleware import  SessionMiddleware
 import optparse
 import yaml
 import xapian
@@ -86,13 +86,17 @@ def function_wrapper(func,func_name):
             if auth == None:
                 #查不到该code的信息,返回403
                 return {'code':403,'msg':"secret code invalid"}
-            if auth["status"] != "normal":
-                return {'code':401,'msg':"your code status is "+ auth['status']}
-            if func.func_code.co_varnames[0] == "dbpath" :
-                if  not args[0] == auth["dbpath"]:
-                    return {'code':402,'msg':"this code is not for this database"}
-                if dbpath_reg.match(args[0]) == None:
-                    return {'code':406,'msg':"dbpath must match regexp: /0-9a-zA-Z+/"}
+            if auth.has_key("status"):
+                if auth["status"] != "normal":
+                    return {'code':401,'msg':"your code status is "+ auth['status']}
+            try:
+                if func.func_code.co_varnames[0] == "dbpath" :
+                    if  not args[0] == auth["dbpath"]:
+                        return {'code':402,'msg':"this code is not for this database"}
+                    if dbpath_reg.match(args[0]) == None:
+                        return {'code':406,'msg':"dbpath must match regexp: /0-9a-zA-Z+/"}
+            except:
+                pass
             else:
                 auth["dbpath"]="-"
         except Exception,e:
@@ -152,10 +156,14 @@ def function_wrapper(func,func_name):
 def main(args_in, app_name="api"):
     import sys
     socketfile=os.path.join(FCGI_SOCKET_DIR, 'cloudface-fcgi-%s.socket' % app_name )
+    if os.path.exists(socketfile):
+        print "socket file exists"
+        sys.exit(0)
     app=PHPRPC_WSGIApplication("utf-8",False,"cloudface.session")
     import api_search
     api_search._prepare_scws()
     for method in get_public_methods(api_search):
+        print "method " + str(method) + " added" 
         app.add(function_wrapper(method,method.__name__),method.__name__)
     app = AuthMiddleWare(app)
 
